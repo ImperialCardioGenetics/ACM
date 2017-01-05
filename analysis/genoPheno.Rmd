@@ -1,0 +1,45 @@
+---
+title: "genoPheno"
+author: "james ware"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(pander)
+```
+
+```{r load data}
+# replace this with separate geno data and pheno data
+# gdata::read.xls() will read the xls file
+ACM <- read.csv("../DATOS_copy.csv", header=T, sep=',') %>%
+  tbl_df
+```
+
+##An example of a data summary table
+```{r summarise acm phenotype by genotype}
+ACM %>%
+  #exclude samples with other_dcm_mutations, unless they are TTN pos
+  filter(OTHER_DCM_MUTATIONS==0 | TTN_MUTATIONS==1) %>% #currently there are 24 with "other DCM", so lots being discarded
+group_by(TTN_MUTATIONS) %>%
+  summarise(
+    initialLVEF = mean(INITIAL_EJECTION_FRACTION,na.rm=T),
+    ageAtSymptoms = mean(AGE_AT_ONSET_OF_SYMPTOMS,na.rm=T)
+    ) %>%
+  t %>% #transposes if you like that way...
+  pander
+```
+
+I had to do `na.rm=T` here, because there was some missing data. Need to check if this appropriate.
+
+##Example stats
+```{r}
+ACM %>%
+  filter(OTHER_DCM_MUTATIONS==0 | TTN_MUTATIONS==1) %>%
+  with(.,t.test(INITIAL_EJECTION_FRACTION ~ TTN_MUTATIONS))
+```
+
+Actually - looking at the output of the t.test, you could just get the means of the two group from there.  Or use the summary method above.
+
