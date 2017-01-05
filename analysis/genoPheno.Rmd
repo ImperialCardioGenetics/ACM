@@ -41,5 +41,17 @@ ACM %>%
   with(.,t.test(INITIAL_EJECTION_FRACTION ~ TTN_MUTATIONS))
 ```
 
+```{r}
+ACM %>%
+  filter(OTHER_DCM_MUTATIONS==0 | TTN_MUTATIONS==1) %>%
+  summarise(
+    lvef_pValue=with(.,t.test(INITIAL_EJECTION_FRACTION ~ TTN_MUTATIONS)$p.val),
+    age_pValue=with(.,t.test(AGE_AT_ONSET_OF_SYMPTOMS ~ TTN_MUTATIONS)$p.val)
+  )
+  
+```
+
+
+
 Actually - looking at the output of the t.test, you could just get the means of the two group from there.  Or use the summary method above.
 
