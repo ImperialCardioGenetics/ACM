@@ -9,9 +9,9 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="james ware" />
+<meta name="author" content="james ware &amp; risha govind" />
 
-<meta name="date" content="2017-01-10" />
+<meta name="date" content="2017-01-11" />
 
 <title>genoPheno</title>
 
@@ -118,8 +118,8 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">genoPheno</h1>
-<h4 class="author"><em>james ware</em></h4>
-<h4 class="date"><em>2017-01-10</em></h4>
+<h4 class="author"><em>james ware &amp; risha govind</em></h4>
+<h4 class="date"><em>2017-01-11</em></h4>
 
 </div>
 
@@ -156,68 +156,34 @@ for (i in 1:count){
   ACM_pheno_colNames&lt;-gsub(headerSpanish, headerEnglish, ACM_pheno_colNames,ignore.case = TRUE)
   headerSpanish&lt;- gsub(x = headerSpanish,replacement = &quot;_&quot;, pattern = &quot; &quot;)
   ACM_pheno_colNames&lt;-gsub(headerSpanish, headerEnglish, ACM_pheno_colNames,ignore.case = TRUE)
+  headerSpanish&lt;- gsub(x = headerSpanish,replacement = &quot;DEATH&quot;, pattern = &quot;MUERTE&quot;)
+  ACM_pheno_colNames&lt;-gsub(headerSpanish, headerEnglish, ACM_pheno_colNames,ignore.case = TRUE)  
 }
 
-ACM_pheno_colNames</code></pre>
-<pre><code>##  [1] &quot;SAMPLES&quot;                           
-##  [2] &quot;NUMBER OF MEDICAL HISTORY&quot;         
-##  [3] &quot;DATE OF LAST CONSULTATION&quot;         
-##  [4] &quot;EDAD.UltC&quot;                         
-##  [5] &quot;FECHA_NACMIENTO&quot;                   
-##  [6] &quot;Gr.alcohol&quot;                        
-##  [7] &quot;SEX&quot;                               
-##  [8] &quot;SMOKING&quot;                           
-##  [9] &quot;HYPERTENSION&quot;                      
-## [10] &quot;DYSLIPIDEMIA&quot;                      
-## [11] &quot;DIABETES MELLITUS&quot;                 
-## [12] &quot;COPD&quot;                              
-## [13] &quot;DATE INITIAL CLINICAL ASSESSMENT&quot;  
-## [14] &quot;AGE AT INICIAL CLINICAL ASSESSMENT&quot;
-## [15] &quot;DATE ONSET OF SYNTOMS&quot;             
-## [16] &quot;SITUATION INITIAL EVALUATION&quot;      
-## [17] &quot;NYHA CLASS&quot;                        
-## [18] &quot;SYSTOLIC BLOOD PRESSURE&quot;           
-## [19] &quot;DIASTOLIC BLOOD PRESSURE&quot;          
-## [20] &quot;HEARTBEAT&quot;                         
-## [21] &quot;SODIUM LEVEL&quot;                      
-## [22] &quot;CREATININA&quot;                        
-## [23] &quot;HEMOGLOBIN&quot;                        
-## [24] &quot;BILIRUBINUBINUBIN&quot;                 
-## [25] &quot;ALAT&quot;                              
-## [26] &quot;ASAT&quot;                              
-## [27] &quot;GGT&quot;                               
-## [28] &quot;QRS DURATION DURATION DURATION&quot;    
-## [29] &quot;DIASTOLIC DIAMETER&quot;                
-## [30] &quot;SYSTOLIC DIAMETER&quot;                 
-## [31] &quot;INITIAL EYECTION FRACTION&quot;         
-## [32] &quot;DIASTOLIC DIAMETER.FINAL&quot;          
-## [33] &quot;FINAL EJECTION FRACTION&quot;           
-## [34] &quot;RECUPERA.FEVI&quot;                     
-## [35] &quot;BebeActual&quot;                        
-## [36] &quot;DIGOXIN&quot;                           
-## [37] &quot;LOOP DIURETICS&quot;                    
-## [38] &quot;THIAZIDES&quot;                         
-## [39] &quot;SPIRONOLACTONE&quot;                    
-## [40] &quot;BETABLOQ&quot;                          
-## [41] &quot;ACEI&quot;                              
-## [42] &quot;ARB&quot;                               
-## [43] &quot;ACEI.O.ARB&quot;                        
-## [44] &quot;AMIODARONERONERONE&quot;                
-## [45] &quot;DEATH&quot;                             
-## [46] &quot;Causa_MUER&quot;                        
-## [47] &quot;Fecha.DEATH&quot;                       
-## [48] &quot;TRANSPLANT&quot;                        
-## [49] &quot;Fecha.TRANSPLANT&quot;                  
-## [50] &quot;CRT&quot;                               
-## [51] &quot;ICD&quot;                               
-## [52] &quot;RITHM.&quot;                            
-## [53] &quot;FibrilaAuricular&quot;                  
-## [54] &quot;QRS DURATION DURATION DURATION.120&quot;
-## [55] &quot;LBBB&quot;                              
-## [56] &quot;FAMILY HISTORY OF CARDIOMYOPATHY&quot;  
-## [57] &quot;HISTORIA.FAMILIAR.DE.DEATH.SUBITA&quot; 
-## [58] &quot;TTN MUTATIONS&quot;                     
-## [59] &quot;OTHER DCM MUTATIONS&quot;</code></pre>
+#manual assignments, not in the coversion table or were not comparable due to typos
+ACM_pheno_colNames&lt;-gsub(&quot;Fecha.DEATH&quot;, &quot;DATE OF DEATH&quot;, ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames&lt;-gsub(&quot;Fecha.TRANSPLANT&quot;,&quot;DATE OF TRANSPLANT&quot;, ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames&lt;-gsub(&quot;EDAD.UltC&quot;,&quot;AGE AT LAST CONSULTATION&quot;, ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames&lt;-gsub(&quot;Causa_MUER&quot;,&quot;CAUSE OF DEATH&quot;, ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames&lt;-gsub(&quot;FECHA_NACMIENTO&quot;,&quot;BIRTHDATE&quot;, ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames&lt;-gsub(&quot;RITHM.&quot;,&quot;RYTHM&quot;, ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames&lt;-gsub(&quot;BETABLOQ&quot;,&quot;BETABLOCKER&quot;, ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames&lt;-gsub(&quot;BebeActual&quot;,&quot;CURRENT DRINKER&quot;, ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames&lt;-gsub(&quot;INITIAL EYECTION FRACTION&quot;,&quot;INITIAL EJECTION FRACTION&quot;, ACM_pheno_colNames,ignore.case = TRUE)
+#DATE_ONSET_OF_SYNTOMS
+
+#Fix errors introduced from the for loop ... Might need to fix that code
+ACM_pheno_colNames&lt;-gsub(&quot;BILIRUBINUBINUBINUBIN&quot;,&quot;BILIRUBIN&quot;, ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames&lt;-gsub(&quot;AMIODARONERONERONERONE&quot;,&quot;AMIODARONE&quot;, ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames&lt;-gsub(&quot;QRS DURATION DURATION DURATION DURATION.120&quot;,&quot;QRS_gt_120&quot;, ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames&lt;-gsub(&quot;QRS DURATION DURATION DURATION DURATION&quot;,&quot;QRS DURATION&quot;, ACM_pheno_colNames,ignore.case = TRUE)
+
+
+ACM_pheno_colNames&lt;-gsub(&quot; &quot;,&quot;_&quot;, ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames&lt;-gsub(&quot;\\.&quot;,&quot;_&quot;, ACM_pheno_colNames,ignore.case = TRUE)
+
+#add column names to ACM_pheno
+colnames(ACM_pheno)&lt;- ACM_pheno_colNames</code></pre>
 <pre class="r"><code>#remove irrelevant columns 
 BRUID_localID &lt;-BRUID_localID[,c(&quot;LocalIdNumber&quot;,&quot;BruNumber&quot;)]
 
@@ -251,8 +217,8 @@ dim(ACM)</code></pre>
   filter(GENE==&quot;TTN&quot; | GENE==&quot;genotype_negative&quot;) %&gt;% 
 group_by(GENE) %&gt;%
   summarise(
-    initialLVEF = mean(FEVI.I,na.rm=T),
-    ageAtinitialAssesement = mean(EDAD_ECI,na.rm=T)
+    initialLVEF = mean(INITIAL_EJECTION_FRACTION,na.rm=T),
+    ageAtinitialAssesement = mean(AGE_AT_INICIAL_CLINICAL_ASSESSMENT,na.rm=T)
     ) %&gt;%
   t %&gt;% #transposes if you like that way...
   pander</code></pre>
@@ -286,11 +252,11 @@ group_by(GENE) %&gt;%
 <h2>stats</h2>
 <pre class="r"><code>ACM %&gt;%
   filter(GENE==&quot;TTN&quot; | GENE==&quot;genotype_negative&quot;) %&gt;%
-  with(.,t.test(FEVI.I ~ GENE))</code></pre>
+  with(.,t.test(INITIAL_EJECTION_FRACTION ~ GENE))</code></pre>
 <pre><code>## 
 ##  Welch Two Sample t-test
 ## 
-## data:  FEVI.I by GENE
+## data:  INITIAL_EJECTION_FRACTION by GENE
 ## t = 0.48394, df = 15.222, p-value = 0.6353
 ## alternative hypothesis: true difference in means is not equal to 0
 ## 95 percent confidence interval:
@@ -301,8 +267,8 @@ group_by(GENE) %&gt;%
 <pre class="r"><code>ACM %&gt;%
   filter(GENE==&quot;TTN&quot; | GENE==&quot;genotype_negative&quot;) %&gt;%
   summarise(
-    lvef_pValue=with(.,t.test(FEVI.I ~ GENE)$p.val),
-    age_pValue=with(.,t.test(EDAD_ECI ~ GENE)$p.val)
+    lvef_pValue=with(.,t.test(INITIAL_EJECTION_FRACTION ~ GENE)$p.val),
+    age_pValue=with(.,t.test(AGE_AT_INICIAL_CLINICAL_ASSESSMENT ~ GENE)$p.val)
   )</code></pre>
 <pre><code>## # A tibble: 1 × 2
 ##   lvef_pValue age_pValue

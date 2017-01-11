@@ -1,6 +1,6 @@
 ---
 title: "genoPheno"
-author: "james ware"
+author: "james ware & risha govind"
 date: "`r Sys.Date()`"
 output: html_document
 ---
@@ -43,7 +43,7 @@ dim(ACM_pheno)
 
 ```
 
-```{r update spanish col names to english}
+```{r update spanish col names to english in ACM_pheno}
 
 ACM_pheno_colNames = colnames(ACM_pheno)
 
@@ -57,15 +57,42 @@ for (i in 1:count){
   ACM_pheno_colNames<-gsub(headerSpanish, headerEnglish, ACM_pheno_colNames,ignore.case = TRUE)
   headerSpanish<- gsub(x = headerSpanish,replacement = "_", pattern = " ")
   ACM_pheno_colNames<-gsub(headerSpanish, headerEnglish, ACM_pheno_colNames,ignore.case = TRUE)
+  headerSpanish<- gsub(x = headerSpanish,replacement = "DEATH", pattern = "MUERTE")
+  ACM_pheno_colNames<-gsub(headerSpanish, headerEnglish, ACM_pheno_colNames,ignore.case = TRUE)  
 }
 
-ACM_pheno_colNames
+#manual assignments, not in the coversion table or were not comparable due to typos
+ACM_pheno_colNames<-gsub("Fecha.DEATH", "DATE OF DEATH", ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames<-gsub("Fecha.TRANSPLANT","DATE OF TRANSPLANT", ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames<-gsub("EDAD.UltC","AGE AT LAST CONSULTATION", ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames<-gsub("Causa_MUER","CAUSE OF DEATH", ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames<-gsub("FECHA_NACMIENTO","BIRTHDATE", ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames<-gsub("RITHM.","RYTHM", ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames<-gsub("BETABLOQ","BETABLOCKER", ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames<-gsub("BebeActual","CURRENT DRINKER", ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames<-gsub("INITIAL EYECTION FRACTION","INITIAL EJECTION FRACTION", ACM_pheno_colNames,ignore.case = TRUE)
+#DATE_ONSET_OF_SYNTOMS
 
+#Fix errors introduced from the for loop ... Might need to fix that code
+ACM_pheno_colNames<-gsub("BILIRUBINUBINUBINUBIN","BILIRUBIN", ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames<-gsub("AMIODARONERONERONERONE","AMIODARONE", ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames<-gsub("QRS DURATION DURATION DURATION DURATION.120","QRS_gt_120", ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames<-gsub("QRS DURATION DURATION DURATION DURATION","QRS DURATION", ACM_pheno_colNames,ignore.case = TRUE)
+
+
+ACM_pheno_colNames<-gsub(" ","_", ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames<-gsub("\\.","_", ACM_pheno_colNames,ignore.case = TRUE)
+
+#add column names to ACM_pheno
+colnames(ACM_pheno)<- ACM_pheno_colNames
 
 ```
 
 
 ```{r combine data}
+
+
+  
 #remove irrelevant columns 
 BRUID_localID <-BRUID_localID[,c("LocalIdNumber","BruNumber")]
 
@@ -104,8 +131,8 @@ ACM %>%
   filter(GENE=="TTN" | GENE=="genotype_negative") %>% 
 group_by(GENE) %>%
   summarise(
-    initialLVEF = mean(FEVI.I,na.rm=T),
-    ageAtinitialAssesement = mean(EDAD_ECI,na.rm=T)
+    initialLVEF = mean(INITIAL_EJECTION_FRACTION,na.rm=T),
+    ageAtinitialAssesement = mean(AGE_AT_INICIAL_CLINICAL_ASSESSMENT,na.rm=T)
     ) %>%
   t %>% #transposes if you like that way...
   pander
@@ -117,15 +144,15 @@ I had to do `na.rm=T` here, because there was some missing data. Need to check i
 ```{r}
 ACM %>%
   filter(GENE=="TTN" | GENE=="genotype_negative") %>%
-  with(.,t.test(FEVI.I ~ GENE))
+  with(.,t.test(INITIAL_EJECTION_FRACTION ~ GENE))
 ```
 
 ```{r}
 ACM %>%
   filter(GENE=="TTN" | GENE=="genotype_negative") %>%
   summarise(
-    lvef_pValue=with(.,t.test(FEVI.I ~ GENE)$p.val),
-    age_pValue=with(.,t.test(EDAD_ECI ~ GENE)$p.val)
+    lvef_pValue=with(.,t.test(INITIAL_EJECTION_FRACTION ~ GENE)$p.val),
+    age_pValue=with(.,t.test(AGE_AT_INICIAL_CLINICAL_ASSESSMENT ~ GENE)$p.val)
   )
   
 ```
