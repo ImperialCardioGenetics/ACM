@@ -14,23 +14,28 @@ library(gdata)
 require(gdata)
 ```
 
+## Load datasets
 ```{r load data}
 
+#BRUID to Spanish IDS [From Rachel]
 BRUID_localID <- read.csv("../BRUID_localID.csv", header=T, sep=',') %>%
   tbl_df
 
+#Genotypes of ACM Samples [From Liz]
 ACM_geno <- read.csv("../Samples_pathogenics_variants.csv", header=T, sep=',') %>%
   tbl_df
 
+#Clinical Phenotype of ACM Samples [From Spanish Team]
 ACM_pheno = read.xls("../ACM_pheno.xlsx", sheet=1, header=T, fileEncoding="latin1") 
 
+#English translations of headers of ACM_pheno file [From Spanish Team]
 ACM_english_headers = read.csv ("../ACM_ColumnNames_English.csv", header = FALSE, sep=',', fileEncoding="latin1")
 
 dim(ACM_pheno)
 ```
 
-
-```{r removing empty rows and columns from excel file df}
+## removing blank rows/columns from excel file dataframe
+```{r removing empty rows and columns from excel file dataframe}
 
 #remove blank columns
 ACM_pheno <- ACM_pheno[,colSums(is.na(ACM_pheno))<nrow(ACM_pheno)]
@@ -43,6 +48,7 @@ dim(ACM_pheno)
 
 ```
 
+## Update Headers to English 
 ```{r update spanish col names to english in ACM_pheno}
 
 ACM_pheno_colNames = colnames(ACM_pheno)
@@ -67,11 +73,12 @@ ACM_pheno_colNames<-gsub("Fecha.TRANSPLANT","DATE OF TRANSPLANT", ACM_pheno_colN
 ACM_pheno_colNames<-gsub("EDAD.UltC","AGE AT LAST CONSULTATION", ACM_pheno_colNames,ignore.case = TRUE)
 ACM_pheno_colNames<-gsub("Causa_MUER","CAUSE OF DEATH", ACM_pheno_colNames,ignore.case = TRUE)
 ACM_pheno_colNames<-gsub("FECHA_NACMIENTO","BIRTHDATE", ACM_pheno_colNames,ignore.case = TRUE)
-ACM_pheno_colNames<-gsub("RITHM.","RYTHM", ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames<-gsub("RITHM.","RHYTHM", ACM_pheno_colNames,ignore.case = TRUE)
 ACM_pheno_colNames<-gsub("BETABLOQ","BETABLOCKER", ACM_pheno_colNames,ignore.case = TRUE)
 ACM_pheno_colNames<-gsub("BebeActual","CURRENT DRINKER", ACM_pheno_colNames,ignore.case = TRUE)
 ACM_pheno_colNames<-gsub("INITIAL EYECTION FRACTION","INITIAL EJECTION FRACTION", ACM_pheno_colNames,ignore.case = TRUE)
-#DATE_ONSET_OF_SYNTOMS
+ACM_pheno_colNames<-gsub("DATE ONSET OF SYNTOMS","DATE ONSET OF SYMPTOMS", ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames<-gsub("AGE AT INICIAL CLINICAL ASSESSMENT","AGE AT INITIAL CLINICAL ASSESSMENT", ACM_pheno_colNames,ignore.case = TRUE)
 
 #Fix errors introduced from the for loop ... Might need to fix that code
 ACM_pheno_colNames<-gsub("BILIRUBINUBINUBINUBIN","BILIRUBIN", ACM_pheno_colNames,ignore.case = TRUE)
@@ -88,11 +95,9 @@ colnames(ACM_pheno)<- ACM_pheno_colNames
 
 ```
 
-
+## Combine all datasets
 ```{r combine data}
 
-
-  
 #remove irrelevant columns 
 BRUID_localID <-BRUID_localID[,c("LocalIdNumber","BruNumber")]
 
@@ -123,16 +128,50 @@ dim(ACM)
 
 
 
-## data summary table
+## data summary table 
 ```{r summarise acm phenotype by genotype}
+
+continuousVariable_summary <- function(x){
+  c<-paste(round(mean(x,na.rm=T), digits=2)," \u00b1 ", round(sd(x,na.rm=T)), sep="")
+return(c)
+}
+
+binaryVariable_summary <- function(x,y){
+  b<-paste(round(sum(x,na.rm=T))," \u0028",round(((sum(x,na.rm=T)/y) * 100), digits=1),"\u0029", sep="")
+return(b)
+}
+
 
 ACM %>%
   #exclude samples with other_dcm_mutations, unless they are TTN pos
   filter(GENE=="TTN" | GENE=="genotype_negative") %>% 
 group_by(GENE) %>%
   summarise(
-    initialLVEF = mean(INITIAL_EJECTION_FRACTION,na.rm=T),
-    ageAtinitialAssesement = mean(AGE_AT_INICIAL_CLINICAL_ASSESSMENT,na.rm=T)
+    total=n(),
+    Gr_alcohol=continuousVariable_summary(Gr_alcohol),
+    AGE_AT_INITIAL_CLINICAL_ASSESSMENT=continuousVariable_summary(AGE_AT_INITIAL_CLINICAL_ASSESSMENT),
+    INITIAL_EJECTION_FRACTION=continuousVariable_summary(INITIAL_EJECTION_FRACTION),
+    FINAL_EJECTION_FRACTION=continuousVariable_summary(FINAL_EJECTION_FRACTION),
+    DIASTOLIC_DIAMETER=continuousVariable_summary(DIASTOLIC_DIAMETER),
+    DIASTOLIC_DIAMETER_FINAL=continuousVariable_summary(DIASTOLIC_DIAMETER_FINAL),
+    SYSTOLIC_DIAMETER=continuousVariable_summary(SYSTOLIC_DIAMETER),
+    FibrilaAuricular=binaryVariable_summary(FibrilaAuricular,n()),
+    FAMILY_HISTORY_OF_CARDIOMYOPATHY=binaryVariable_summary(FAMILY_HISTORY_OF_CARDIOMYOPATHY,n()),
+    FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH=binaryVariable_summary(FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH,n()),
+    DEATH=binaryVariable_summary(DEATH,n()),
+    SITUATION_INITIAL_EVALUATION=binaryVariable_summary(SITUATION_INITIAL_EVALUATION,n()),
+    RECUPERA_FEVI=binaryVariable_summary(RECUPERA_FEVI,n()),
+    CURRENT_DRINKER=binaryVariable_summary(CURRENT_DRINKER,n()),
+    CRT=binaryVariable_summary(CRT,n()),
+    QRS_gt_120=binaryVariable_summary(QRS_gt_120,n()),
+    ICD=binaryVariable_summary(ICD,n()),
+    TRANSPLANT=binaryVariable_summary(TRANSPLANT,n()),
+    SMOKING=binaryVariable_summary(SMOKING,n()),
+    RHYTHM=binaryVariable_summary(RHYTHM,n()),
+    HYPERTENSION=binaryVariable_summary(HYPERTENSION,n()),
+    DYSLIPIDEMIA=binaryVariable_summary(DYSLIPIDEMIA,n()),
+    DIABETES_MELLITUS=binaryVariable_summary(DIABETES_MELLITUS,n()),
+    COPD=binaryVariable_summary(COPD,n())
     ) %>%
   t %>% #transposes if you like that way...
   pander
@@ -140,24 +179,41 @@ group_by(GENE) %>%
 
 I had to do `na.rm=T` here, because there was some missing data. Need to check if this appropriate.
 
-## stats
-```{r}
+## STATS Wilcoxon rank sum test 
+```{r stats, include=FALSE}
+
+
+
 ACM %>%
   filter(GENE=="TTN" | GENE=="genotype_negative") %>%
-  with(.,t.test(INITIAL_EJECTION_FRACTION ~ GENE))
+  #with(.,wilcox.test(INITIAL_EJECTION_FRACTION ~ GENE))
+  with(.,chisq.test(x=RHYTHM,y=GENE))
 ```
 
 ```{r}
 ACM %>%
   filter(GENE=="TTN" | GENE=="genotype_negative") %>%
   summarise(
-    lvef_pValue=with(.,t.test(INITIAL_EJECTION_FRACTION ~ GENE)$p.val),
-    age_pValue=with(.,t.test(AGE_AT_INICIAL_CLINICAL_ASSESSMENT ~ GENE)$p.val)
-  )
+    FibrilaAuricular=with(., chisq.test(x=FibrilaAuricular,y=GENE)$p.val),
+    NYHA_CLASS=with(., chisq.test(x=NYHA_CLASS,y=GENE)$p.val),
+    FAMILY_HISTORY_OF_CARDIOMYOPATHY=with(., chisq.test(x=FAMILY_HISTORY_OF_CARDIOMYOPATHY,y=GENE)$p.val),
+    FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH=with(., chisq.test(x=FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH,y=GENE)$p.val),
+    DEATH=with(., chisq.test(x=DEATH,y=GENE)$p.val),
+    SITUATION_INITIAL_EVALUATION=with(., chisq.test(x=SITUATION_INITIAL_EVALUATION,y=GENE)$p.val),
+    RECUPERA_FEVI=with(., chisq.test(x=RECUPERA_FEVI,y=GENE)$p.val),
+    CURRENT_DRINKER=with(., chisq.test(x=CURRENT_DRINKER,y=GENE)$p.val),
+    INITIAL_EJECTION_FRACTION=with(.,wilcox.test(INITIAL_EJECTION_FRACTION ~ GENE)$p.val),
+    DIASTOLIC_DIAMETER=with(.,wilcox.test(DIASTOLIC_DIAMETER ~ GENE)$p.val),
+    Gr_alcohol=with(.,wilcox.test(Gr_alcohol ~ GENE)$p.val),
+    SYSTOLIC_DIAMETER=with(.,wilcox.test(SYSTOLIC_DIAMETER ~ GENE)$p.val),
+    AGE_AT_INITIAL_CLINICAL_ASSESSMENT=with(.,wilcox.test(AGE_AT_INITIAL_CLINICAL_ASSESSMENT ~ GENE)$p.val)
+  )%>%
+  t %>% #transposes if you like that way...
+  pander
   
 ```
 
 
 
-Actually - looking at the output of the t.test, you could just get the means of the two group from there.  Or use the summary method above.
+Actually - looking at the output of the t.test, you could just get the means of the two group from there.  Or use the summary method above. Using wilcox.test as data is not normally distributed. This does not give mean and std dev
 

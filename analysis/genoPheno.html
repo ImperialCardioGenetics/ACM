@@ -124,18 +124,27 @@ $(document).ready(function () {
 </div>
 
 
-<pre class="r"><code>BRUID_localID &lt;- read.csv(&quot;../BRUID_localID.csv&quot;, header=T, sep=',') %&gt;%
+<div id="load-datasets" class="section level2">
+<h2>Load datasets</h2>
+<pre class="r"><code>#BRUID to Spanish IDS [From Rachel]
+BRUID_localID &lt;- read.csv(&quot;../BRUID_localID.csv&quot;, header=T, sep=',') %&gt;%
   tbl_df
 
+#Genotypes of ACM Samples [From Liz]
 ACM_geno &lt;- read.csv(&quot;../Samples_pathogenics_variants.csv&quot;, header=T, sep=',') %&gt;%
   tbl_df
 
+#Clinical Phenotype of ACM Samples [From Spanish Team]
 ACM_pheno = read.xls(&quot;../ACM_pheno.xlsx&quot;, sheet=1, header=T, fileEncoding=&quot;latin1&quot;) 
 
+#English translations of headers of ACM_pheno file [From Spanish Team]
 ACM_english_headers = read.csv (&quot;../ACM_ColumnNames_English.csv&quot;, header = FALSE, sep=',', fileEncoding=&quot;latin1&quot;)
 
 dim(ACM_pheno)</code></pre>
 <pre><code>## [1]  142 1017</code></pre>
+</div>
+<div id="removing-blank-rowscolumns-from-excel-file-dataframe" class="section level2">
+<h2>removing blank rows/columns from excel file dataframe</h2>
 <pre class="r"><code>#remove blank columns
 ACM_pheno &lt;- ACM_pheno[,colSums(is.na(ACM_pheno))&lt;nrow(ACM_pheno)]
 #remove rows that do not have sampleIDs
@@ -144,6 +153,9 @@ ACM_pheno &lt;- ACM_pheno[!(ACM_pheno$SAMPLES  == &quot;&quot;), ]  %&gt;%
 
 dim(ACM_pheno)</code></pre>
 <pre><code>## [1] 141  59</code></pre>
+</div>
+<div id="update-headers-to-english" class="section level2">
+<h2>Update Headers to English</h2>
 <pre class="r"><code>ACM_pheno_colNames = colnames(ACM_pheno)
 
 count &lt;- nrow(ACM_english_headers)
@@ -166,11 +178,12 @@ ACM_pheno_colNames&lt;-gsub(&quot;Fecha.TRANSPLANT&quot;,&quot;DATE OF TRANSPLAN
 ACM_pheno_colNames&lt;-gsub(&quot;EDAD.UltC&quot;,&quot;AGE AT LAST CONSULTATION&quot;, ACM_pheno_colNames,ignore.case = TRUE)
 ACM_pheno_colNames&lt;-gsub(&quot;Causa_MUER&quot;,&quot;CAUSE OF DEATH&quot;, ACM_pheno_colNames,ignore.case = TRUE)
 ACM_pheno_colNames&lt;-gsub(&quot;FECHA_NACMIENTO&quot;,&quot;BIRTHDATE&quot;, ACM_pheno_colNames,ignore.case = TRUE)
-ACM_pheno_colNames&lt;-gsub(&quot;RITHM.&quot;,&quot;RYTHM&quot;, ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames&lt;-gsub(&quot;RITHM.&quot;,&quot;RHYTHM&quot;, ACM_pheno_colNames,ignore.case = TRUE)
 ACM_pheno_colNames&lt;-gsub(&quot;BETABLOQ&quot;,&quot;BETABLOCKER&quot;, ACM_pheno_colNames,ignore.case = TRUE)
 ACM_pheno_colNames&lt;-gsub(&quot;BebeActual&quot;,&quot;CURRENT DRINKER&quot;, ACM_pheno_colNames,ignore.case = TRUE)
 ACM_pheno_colNames&lt;-gsub(&quot;INITIAL EYECTION FRACTION&quot;,&quot;INITIAL EJECTION FRACTION&quot;, ACM_pheno_colNames,ignore.case = TRUE)
-#DATE_ONSET_OF_SYNTOMS
+ACM_pheno_colNames&lt;-gsub(&quot;DATE ONSET OF SYNTOMS&quot;,&quot;DATE ONSET OF SYMPTOMS&quot;, ACM_pheno_colNames,ignore.case = TRUE)
+ACM_pheno_colNames&lt;-gsub(&quot;AGE AT INICIAL CLINICAL ASSESSMENT&quot;,&quot;AGE AT INITIAL CLINICAL ASSESSMENT&quot;, ACM_pheno_colNames,ignore.case = TRUE)
 
 #Fix errors introduced from the for loop ... Might need to fix that code
 ACM_pheno_colNames&lt;-gsub(&quot;BILIRUBINUBINUBINUBIN&quot;,&quot;BILIRUBIN&quot;, ACM_pheno_colNames,ignore.case = TRUE)
@@ -184,6 +197,9 @@ ACM_pheno_colNames&lt;-gsub(&quot;\\.&quot;,&quot;_&quot;, ACM_pheno_colNames,ig
 
 #add column names to ACM_pheno
 colnames(ACM_pheno)&lt;- ACM_pheno_colNames</code></pre>
+</div>
+<div id="combine-all-datasets" class="section level2">
+<h2>Combine all datasets</h2>
 <pre class="r"><code>#remove irrelevant columns 
 BRUID_localID &lt;-BRUID_localID[,c(&quot;LocalIdNumber&quot;,&quot;BruNumber&quot;)]
 
@@ -210,23 +226,58 @@ ACM$GENE[is.na(ACM$GENE)] &lt;- &quot;genotype_negative&quot;
 
 dim(ACM)</code></pre>
 <pre><code>## [1] 141  61</code></pre>
+</div>
 <div id="data-summary-table" class="section level2">
 <h2>data summary table</h2>
-<pre class="r"><code>ACM %&gt;%
+<pre class="r"><code>continuousVariable_summary &lt;- function(x){
+  c&lt;-paste(round(mean(x,na.rm=T), digits=2),&quot; \u00b1 &quot;, round(sd(x,na.rm=T)), sep=&quot;&quot;)
+return(c)
+}
+
+binaryVariable_summary &lt;- function(x,y){
+  b&lt;-paste(round(sum(x,na.rm=T)),&quot; \u0028&quot;,round(((sum(x,na.rm=T)/y) * 100), digits=1),&quot;\u0029&quot;, sep=&quot;&quot;)
+return(b)
+}
+
+
+ACM %&gt;%
   #exclude samples with other_dcm_mutations, unless they are TTN pos
   filter(GENE==&quot;TTN&quot; | GENE==&quot;genotype_negative&quot;) %&gt;% 
 group_by(GENE) %&gt;%
   summarise(
-    initialLVEF = mean(INITIAL_EJECTION_FRACTION,na.rm=T),
-    ageAtinitialAssesement = mean(AGE_AT_INICIAL_CLINICAL_ASSESSMENT,na.rm=T)
+    total=n(),
+    Gr_alcohol=continuousVariable_summary(Gr_alcohol),
+    AGE_AT_INITIAL_CLINICAL_ASSESSMENT=continuousVariable_summary(AGE_AT_INITIAL_CLINICAL_ASSESSMENT),
+    INITIAL_EJECTION_FRACTION=continuousVariable_summary(INITIAL_EJECTION_FRACTION),
+    FINAL_EJECTION_FRACTION=continuousVariable_summary(FINAL_EJECTION_FRACTION),
+    DIASTOLIC_DIAMETER=continuousVariable_summary(DIASTOLIC_DIAMETER),
+    DIASTOLIC_DIAMETER_FINAL=continuousVariable_summary(DIASTOLIC_DIAMETER_FINAL),
+    SYSTOLIC_DIAMETER=continuousVariable_summary(SYSTOLIC_DIAMETER),
+    FibrilaAuricular=binaryVariable_summary(FibrilaAuricular,n()),
+    FAMILY_HISTORY_OF_CARDIOMYOPATHY=binaryVariable_summary(FAMILY_HISTORY_OF_CARDIOMYOPATHY,n()),
+    FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH=binaryVariable_summary(FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH,n()),
+    DEATH=binaryVariable_summary(DEATH,n()),
+    SITUATION_INITIAL_EVALUATION=binaryVariable_summary(SITUATION_INITIAL_EVALUATION,n()),
+    RECUPERA_FEVI=binaryVariable_summary(RECUPERA_FEVI,n()),
+    CURRENT_DRINKER=binaryVariable_summary(CURRENT_DRINKER,n()),
+    CRT=binaryVariable_summary(CRT,n()),
+    QRS_gt_120=binaryVariable_summary(QRS_gt_120,n()),
+    ICD=binaryVariable_summary(ICD,n()),
+    TRANSPLANT=binaryVariable_summary(TRANSPLANT,n()),
+    SMOKING=binaryVariable_summary(SMOKING,n()),
+    RHYTHM=binaryVariable_summary(RHYTHM,n()),
+    HYPERTENSION=binaryVariable_summary(HYPERTENSION,n()),
+    DYSLIPIDEMIA=binaryVariable_summary(DYSLIPIDEMIA,n()),
+    DIABETES_MELLITUS=binaryVariable_summary(DIABETES_MELLITUS,n()),
+    COPD=binaryVariable_summary(COPD,n())
     ) %&gt;%
   t %&gt;% #transposes if you like that way...
   pander</code></pre>
-<table style="width:76%;">
+<table>
 <colgroup>
-<col width="40%"></col>
-<col width="25%"></col>
-<col width="11%"></col>
+<col width="60%"></col>
+<col width="24%"></col>
+<col width="14%"></col>
 </colgroup>
 <tbody>
 <tr class="odd">
@@ -235,46 +286,230 @@ group_by(GENE) %&gt;%
 <td align="center">TTN</td>
 </tr>
 <tr class="even">
-<td align="center"><strong>initialLVEF</strong></td>
-<td>26.51639</td>
-<td align="center">25.07143</td>
+<td align="center"><strong>total</strong></td>
+<td>122</td>
+<td align="center">14</td>
 </tr>
 <tr class="odd">
-<td align="center"><strong>ageAtinitialAssesement</strong></td>
-<td>53.36885</td>
-<td align="center">49.35714</td>
+<td align="center"><strong>Gr_alcohol</strong></td>
+<td>136.15 ± 50</td>
+<td align="center">138.75 ± 69</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>AGE_AT_INITIAL_CLINICAL_ASSESSMENT</strong></td>
+<td>53.37 ± 10</td>
+<td align="center">49.36 ± 13</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>INITIAL_EJECTION_FRACTION</strong></td>
+<td>26.52 ± 9</td>
+<td align="center">25.07 ± 11</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>FINAL_EJECTION_FRACTION</strong></td>
+<td>42.19 ± 15</td>
+<td align="center">41.86 ± 14</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>DIASTOLIC_DIAMETER</strong></td>
+<td>65.79 ± 9</td>
+<td align="center">63.21 ± 7</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>DIASTOLIC_DIAMETER_FINAL</strong></td>
+<td>58.58 ± 10</td>
+<td align="center">55.91 ± 9</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>SYSTOLIC_DIAMETER</strong></td>
+<td>55.88 ± 10</td>
+<td align="center">58.2 ± 10</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>FibrilaAuricular</strong></td>
+<td>41 (33.6)</td>
+<td align="center">5 (35.7)</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>FAMILY_HISTORY_OF_CARDIOMYOPATHY</strong></td>
+<td>9 (7.4)</td>
+<td align="center">6 (42.9)</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH</strong></td>
+<td>12 (9.8)</td>
+<td align="center">1 (7.1)</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>DEATH</strong></td>
+<td>8 (6.6)</td>
+<td align="center">1 (7.1)</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>SITUATION_INITIAL_EVALUATION</strong></td>
+<td>73 (59.8)</td>
+<td align="center">8 (57.1)</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>RECUPERA_FEVI</strong></td>
+<td>60 (49.2)</td>
+<td align="center">7 (50)</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>CURRENT_DRINKER</strong></td>
+<td>59 (48.4)</td>
+<td align="center">4 (28.6)</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>CRT</strong></td>
+<td>20 (16.4)</td>
+<td align="center">2 (14.3)</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>QRS_gt_120</strong></td>
+<td>38 (31.1)</td>
+<td align="center">3 (21.4)</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>ICD</strong></td>
+<td>30 (24.6)</td>
+<td align="center">7 (50)</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>TRANSPLANT</strong></td>
+<td>11 (9)</td>
+<td align="center">2 (14.3)</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>SMOKING</strong></td>
+<td>55 (45.1)</td>
+<td align="center">4 (28.6)</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>RHYTHM</strong></td>
+<td>40 (32.8)</td>
+<td align="center">5 (35.7)</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>HYPERTENSION</strong></td>
+<td>67 (54.9)</td>
+<td align="center">4 (28.6)</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>DYSLIPIDEMIA</strong></td>
+<td>50 (41)</td>
+<td align="center">6 (42.9)</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>DIABETES_MELLITUS</strong></td>
+<td>36 (29.5)</td>
+<td align="center">5 (35.7)</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>COPD</strong></td>
+<td>33 (27)</td>
+<td align="center">3 (21.4)</td>
 </tr>
 </tbody>
 </table>
 <p>I had to do <code>na.rm=T</code> here, because there was some missing data. Need to check if this appropriate.</p>
 </div>
-<div id="stats" class="section level2">
-<h2>stats</h2>
-<pre class="r"><code>ACM %&gt;%
-  filter(GENE==&quot;TTN&quot; | GENE==&quot;genotype_negative&quot;) %&gt;%
-  with(.,t.test(INITIAL_EJECTION_FRACTION ~ GENE))</code></pre>
-<pre><code>## 
-##  Welch Two Sample t-test
-## 
-## data:  INITIAL_EJECTION_FRACTION by GENE
-## t = 0.48394, df = 15.222, p-value = 0.6353
-## alternative hypothesis: true difference in means is not equal to 0
-## 95 percent confidence interval:
-##  -4.91112  7.80105
-## sample estimates:
-## mean in group genotype_negative               mean in group TTN 
-##                        26.51639                        25.07143</code></pre>
+<div id="stats-wilcoxon-rank-sum-test" class="section level2">
+<h2>STATS Wilcoxon rank sum test</h2>
 <pre class="r"><code>ACM %&gt;%
   filter(GENE==&quot;TTN&quot; | GENE==&quot;genotype_negative&quot;) %&gt;%
   summarise(
-    lvef_pValue=with(.,t.test(INITIAL_EJECTION_FRACTION ~ GENE)$p.val),
-    age_pValue=with(.,t.test(AGE_AT_INICIAL_CLINICAL_ASSESSMENT ~ GENE)$p.val)
-  )</code></pre>
-<pre><code>## # A tibble: 1 × 2
-##   lvef_pValue age_pValue
-##         &lt;dbl&gt;      &lt;dbl&gt;
-## 1    0.635317  0.2758156</code></pre>
-<p>Actually - looking at the output of the t.test, you could just get the means of the two group from there. Or use the summary method above.</p>
+    FibrilaAuricular=with(., chisq.test(x=FibrilaAuricular,y=GENE)$p.val),
+    NYHA_CLASS=with(., chisq.test(x=NYHA_CLASS,y=GENE)$p.val),
+    FAMILY_HISTORY_OF_CARDIOMYOPATHY=with(., chisq.test(x=FAMILY_HISTORY_OF_CARDIOMYOPATHY,y=GENE)$p.val),
+    FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH=with(., chisq.test(x=FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH,y=GENE)$p.val),
+    DEATH=with(., chisq.test(x=DEATH,y=GENE)$p.val),
+    SITUATION_INITIAL_EVALUATION=with(., chisq.test(x=SITUATION_INITIAL_EVALUATION,y=GENE)$p.val),
+    RECUPERA_FEVI=with(., chisq.test(x=RECUPERA_FEVI,y=GENE)$p.val),
+    CURRENT_DRINKER=with(., chisq.test(x=CURRENT_DRINKER,y=GENE)$p.val),
+    INITIAL_EJECTION_FRACTION=with(.,wilcox.test(INITIAL_EJECTION_FRACTION ~ GENE)$p.val),
+    DIASTOLIC_DIAMETER=with(.,wilcox.test(DIASTOLIC_DIAMETER ~ GENE)$p.val),
+    Gr_alcohol=with(.,wilcox.test(Gr_alcohol ~ GENE)$p.val),
+    SYSTOLIC_DIAMETER=with(.,wilcox.test(SYSTOLIC_DIAMETER ~ GENE)$p.val),
+    AGE_AT_INITIAL_CLINICAL_ASSESSMENT=with(.,wilcox.test(AGE_AT_INITIAL_CLINICAL_ASSESSMENT ~ GENE)$p.val)
+  )%&gt;%
+  t %&gt;% #transposes if you like that way...
+  pander</code></pre>
+<pre><code>## Warning in chisq.test(x = c(0L, 1L, 0L, 0L, 0L, 1L, 0L, 0L, 0L, 0L, 1L, :
+## Chi-squared approximation may be incorrect</code></pre>
+<pre><code>## Warning in chisq.test(x = c(2L, 3L, 2L, 2L, 3L, 3L, 3L, 2L, 2L, 1L, 1L, :
+## Chi-squared approximation may be incorrect</code></pre>
+<pre><code>## Warning in chisq.test(x = c(0L, 0L, 0L, 0L, 1L, 1L, 1L, 0L, 0L, 1L, 0L, :
+## Chi-squared approximation may be incorrect</code></pre>
+<pre><code>## Warning in chisq.test(x = c(0L, 0L, 0L, 0L, 0L, 1L, 0L, 0L, 0L, 0L, 0L, :
+## Chi-squared approximation may be incorrect</code></pre>
+<pre><code>## Warning in chisq.test(x = c(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, :
+## Chi-squared approximation may be incorrect</code></pre>
+<pre><code>## Warning in chisq.test(x = c(0L, 0L, 0L, 0L, 0L, 0L, 1L, 1L, 1L, 0L, 0L, :
+## Chi-squared approximation may be incorrect</code></pre>
+<pre><code>## Warning in wilcox.test.default(x = c(198L, 80L, 149L, 139L, 99L, 80L,
+## 109L, : cannot compute exact p-value with ties</code></pre>
+<table style="width:74%;">
+<colgroup>
+<col width="62%"></col>
+<col width="11%"></col>
+</colgroup>
+<tbody>
+<tr class="odd">
+<td align="center"><strong>FibrilaAuricular</strong></td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>NYHA_CLASS</strong></td>
+<td align="center">0.3826</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>FAMILY_HISTORY_OF_CARDIOMYOPATHY</strong></td>
+<td align="center">0.000366</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH</strong></td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>DEATH</strong></td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>SITUATION_INITIAL_EVALUATION</strong></td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>RECUPERA_FEVI</strong></td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>CURRENT_DRINKER</strong></td>
+<td align="center">0.4727</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>INITIAL_EJECTION_FRACTION</strong></td>
+<td align="center">0.3528</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>DIASTOLIC_DIAMETER</strong></td>
+<td align="center">0.3688</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>Gr_alcohol</strong></td>
+<td align="center">0.8491</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>SYSTOLIC_DIAMETER</strong></td>
+<td align="center">0.9462</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>AGE_AT_INITIAL_CLINICAL_ASSESSMENT</strong></td>
+<td align="center">0.314</td>
+</tr>
+</tbody>
+</table>
+<p>Actually - looking at the output of the t.test, you could just get the means of the two group from there. Or use the summary method above. Using wilcox.test as data is not normally distributed. This does not give mean and std dev</p>
 </div>
 
 
