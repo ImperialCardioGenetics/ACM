@@ -143,15 +143,20 @@ dim(DCM_filtered)</code></pre>
 <pre><code>## [1] 366   9</code></pre>
 <pre class="r"><code>dim(HVOL_filtered)</code></pre>
 <pre><code>## [1] 445   6</code></pre>
+<pre class="r"><code>#update data missing from Paz's pheno file 
+
+DCM_filtered$Ageatscan_years[DCM_filtered$Bru.Number == '10CH00929'] &lt;- 71
+DCM_filtered$Ageatscan_years[DCM_filtered$Bru.Number == '10PO01022'] &lt;- 44
+DCM_filtered$Ageatscan_years[DCM_filtered$Bru.Number == '10RM00840'] &lt;- 66</code></pre>
 <pre class="r"><code>DCM &lt;- DCM_filtered[,c(&quot;Ageatscan_years&quot;,&quot;AgeatBB_years&quot;,&quot;Race&quot;,&quot;Sex&quot;,&quot;Dcm.Eflv&quot;,&quot;LVEDVI&quot;,&quot;Dcm.Edvlv&quot;,&quot;EtOHXS&quot;)]
 HVOL &lt;- HVOL_filtered[,c(&quot;Ageatscan_years&quot;,&quot;Race&quot;,&quot;Sex&quot;,&quot;Hvq.Eflv&quot;,&quot;Hvq.Edvlv&quot;)]
 
 #Add a column : group
-DCM&lt;-cbind(DCM,group=&quot;DCM&quot;)
-HVOL&lt;-cbind(HVOL,group=&quot;HVOL&quot;)
+DCM&lt;-cbind(group=&quot;DCM&quot;, DCM)
+HVOL&lt;-cbind(group=&quot;HVOL&quot;, HVOL)
 
 colnames(DCM) &lt;- c(&quot;group&quot;, &quot;AGE_AT_scan&quot;, &quot;AGE_AT_recruitment&quot;, &quot;Ethnicity&quot;, &quot;SEX&quot;, &quot;EF&quot;,&quot;LVEDVI&quot;, &quot;DD&quot;,&quot;EtOHXS&quot;)
-colnames(DCM) &lt;- c(&quot;group&quot;, &quot;AGE_AT_scan&quot;,&quot;Ethnicity&quot;, &quot;SEX&quot;, &quot;EF&quot;,&quot;DD&quot;)
+colnames(HVOL) &lt;- c(&quot;group&quot;, &quot;AGE_AT_scan&quot;,&quot;Ethnicity&quot;, &quot;SEX&quot;, &quot;EF&quot;,&quot;DD&quot;)
 
 dim(DCM)</code></pre>
 <pre><code>## [1] 366   9</code></pre>

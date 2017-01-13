@@ -32,21 +32,33 @@ dim(HVOL_filtered)
 
 ```
 
+```{r Update missing Data}
+
+#update data missing from Paz's pheno file 
+
+DCM_filtered$Ageatscan_years[DCM_filtered$Bru.Number == '10CH00929'] <- 71
+DCM_filtered$Ageatscan_years[DCM_filtered$Bru.Number == '10PO01022'] <- 44
+DCM_filtered$Ageatscan_years[DCM_filtered$Bru.Number == '10RM00840'] <- 66
+
+```
+
+
 ```{r Drop Columns}
 
 DCM <- DCM_filtered[,c("Ageatscan_years","AgeatBB_years","Race","Sex","Dcm.Eflv","LVEDVI","Dcm.Edvlv","EtOHXS")]
 HVOL <- HVOL_filtered[,c("Ageatscan_years","Race","Sex","Hvq.Eflv","Hvq.Edvlv")]
 
 #Add a column : group
-DCM<-cbind(DCM,group="DCM")
-HVOL<-cbind(HVOL,group="HVOL")
+DCM<-cbind(group="DCM", DCM)
+HVOL<-cbind(group="HVOL", HVOL)
 
 colnames(DCM) <- c("group", "AGE_AT_scan", "AGE_AT_recruitment", "Ethnicity", "SEX", "EF","LVEDVI", "DD","EtOHXS")
-colnames(DCM) <- c("group", "AGE_AT_scan","Ethnicity", "SEX", "EF","DD")
+colnames(HVOL) <- c("group", "AGE_AT_scan","Ethnicity", "SEX", "EF","DD")
 
 dim(DCM)
 dim(HVOL)
 ```
+
 
 ```{r }
 
