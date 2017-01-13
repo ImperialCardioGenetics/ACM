@@ -251,7 +251,6 @@ dim(ACM)</code></pre>
 ACM$SEX[ACM$SEX==&quot;2&quot;] &lt;- 0</code></pre>
 <pre class="r"><code>#To Do
 # AGE oF SYMPTOM
-# NYHA CLASS 
 
 continuousVariable_summary &lt;- function(x){
   c&lt;-paste(round(mean(x,na.rm=T), digits=2),&quot; \u00b1 &quot;, round(sd(x,na.rm=T), digits=2), sep=&quot;&quot;)
@@ -439,6 +438,306 @@ pander(MainTable)</code></pre>
 </tr>
 </tbody>
 </table>
+<pre class="r"><code>#To Do
+# NYHA CLASS is categorical - currently treated as continuous variable 
+# Like the header in above : Number in each group in column names is hard coded. Need to be fixed 
+
+SuppTable1 &lt;- ACM %&gt;%
+  group_by(VarGroup) %&gt;%
+  summarise(
+    #total=n(),
+    #continuous Variables
+    FINAL_EJECTION_FRACTION=continuousVariable_summary(FINAL_EJECTION_FRACTION),
+    DIASTOLIC_DIAMETER_FINAL=continuousVariable_summary(DIASTOLIC_DIAMETER_FINAL),
+    SYSTOLIC_DIAMETER=continuousVariable_summary(SYSTOLIC_DIAMETER),
+    NYHA_CLASS=continuousVariable_summary(NYHA_CLASS),
+    #binary Variables
+    CURRENT_DRINKER=binaryVariable_summary(CURRENT_DRINKER,n()),
+    DEATH=binaryVariable_summary(DEATH,n()),
+    RECUPERA_FEVI=binaryVariable_summary(RECUPERA_FEVI,n()),    
+    CRT=binaryVariable_summary(CRT,n()),
+    QRS_gt_120=binaryVariable_summary(QRS_gt_120,n()),
+    ICD=binaryVariable_summary(ICD,n()),
+    TRANSPLANT=binaryVariable_summary(TRANSPLANT,n()),
+    SMOKING=binaryVariable_summary(SMOKING,n()),
+    HYPERTENSION=binaryVariable_summary(HYPERTENSION,n()),
+    DYSLIPIDEMIA=binaryVariable_summary(DYSLIPIDEMIA,n()),
+    RHYTHM=binaryVariable_summary(RHYTHM,n()),  
+    SITUATION_INITIAL_EVALUATION=binaryVariable_summary(SITUATION_INITIAL_EVALUATION,n()),
+    DIABETES_MELLITUS=binaryVariable_summary(DIABETES_MELLITUS,n()),
+    COPD=binaryVariable_summary(COPD,n())
+    ) 
+    
+SuppTable2 &lt;- ACM %&gt;%
+  group_by(VarGroup) %&gt;%
+  summarise(
+    FINAL_EJECTION_FRACTION=sum(is.na(FINAL_EJECTION_FRACTION)),
+    DIASTOLIC_DIAMETER_FINAL=sum(is.na(DIASTOLIC_DIAMETER_FINAL)),
+    SYSTOLIC_DIAMETER=sum(is.na(SYSTOLIC_DIAMETER)),
+    NYHA_CLASS=sum(is.na(NYHA_CLASS)),
+    CURRENT_DRINKER=sum(is.na(CURRENT_DRINKER)),
+    DEATH=sum(is.na(DEATH)),
+    RECUPERA_FEVI=sum(is.na(RECUPERA_FEVI)),    
+    CRT=sum(is.na(CRT)),
+    QRS_gt_120=sum(is.na(QRS_gt_120)),
+    ICD=sum(is.na(ICD)),
+    TRANSPLANT=sum(is.na(TRANSPLANT)),
+    SMOKING=sum(is.na(SMOKING)),
+    HYPERTENSION=sum(is.na(HYPERTENSION)),
+    DYSLIPIDEMIA=sum(is.na(DYSLIPIDEMIA)),
+    RHYTHM=sum(is.na(RHYTHM)),  
+    SITUATION_INITIAL_EVALUATION=sum(is.na(SITUATION_INITIAL_EVALUATION)),
+    DIABETES_MELLITUS=sum(is.na(DIABETES_MELLITUS)),
+    COPD=sum(is.na(COPD))
+    ) 
+    
+SuppTable3 &lt;- ACM %&gt;%
+  filter(VarGroup==&quot;TTNtv&quot; | VarGroup==&quot;GenotypeNegative&quot;) %&gt;%
+  summarise(
+    FINAL_EJECTION_FRACTION=with(.,round(digits=4,wilcox.test(FINAL_EJECTION_FRACTION ~ VarGroup)$p.val)),
+    DIASTOLIC_DIAMETER_FINAL=with(.,round(digits=4,wilcox.test(DIASTOLIC_DIAMETER_FINAL ~ VarGroup)$p.val)),
+    SYSTOLIC_DIAMETER=with(.,round(digits=4,wilcox.test(SYSTOLIC_DIAMETER ~ VarGroup)$p.val)),
+    NYHA_CLASS=with(.,round(digits=4,wilcox.test(NYHA_CLASS ~ VarGroup)$p.val)),
+    
+    CURRENT_DRINKER=with(., round(digits=4,fisher.test(x=CURRENT_DRINKER,y=VarGroup)$p.val)),
+    DEATH=with(., round(digits=4,fisher.test(x=DEATH,y=VarGroup)$p.val)),
+    RECUPERA_FEVI=with(., round(digits=4,fisher.test(x=RECUPERA_FEVI,y=VarGroup)$p.val)),   
+    CRT=with(., round(digits=4,fisher.test(x=CRT,y=VarGroup)$p.val)),
+    QRS_gt_120=with(., round(digits=4,fisher.test(x=QRS_gt_120,y=VarGroup)$p.val)),
+    ICD=with(., round(digits=4,fisher.test(x=ICD,y=VarGroup)$p.val)),
+    TRANSPLANT=with(., round(digits=4,fisher.test(x=TRANSPLANT,y=VarGroup)$p.val)),
+    SMOKING=with(., round(digits=4,fisher.test(x=SMOKING,y=VarGroup)$p.val)),
+    HYPERTENSION=with(., round(digits=4,fisher.test(x=HYPERTENSION,y=VarGroup)$p.val)),
+    DYSLIPIDEMIA=with(., round(digits=4,fisher.test(x=DYSLIPIDEMIA,y=VarGroup)$p.val)),
+    RHYTHM=with(., round(digits=4,fisher.test(x=RHYTHM,y=VarGroup)$p.val)), 
+    SITUATION_INITIAL_EVALUATION=with(., round(digits=4,fisher.test(x=SITUATION_INITIAL_EVALUATION,y=VarGroup)$p.val)),
+    DIABETES_MELLITUS=with(., round(digits=4,fisher.test(x=DIABETES_MELLITUS,y=VarGroup)$p.val)),
+    COPD=with(., round(digits=4,fisher.test(x=COPD,y=VarGroup)$p.val))
+    ) 
+    
+
+SuppTable1&lt;-SuppTable1[,c(&quot;FINAL_EJECTION_FRACTION&quot;,&quot;DIASTOLIC_DIAMETER_FINAL&quot;,&quot;SYSTOLIC_DIAMETER&quot;,&quot;NYHA_CLASS&quot;,&quot;CURRENT_DRINKER&quot;,&quot;DEATH&quot;,&quot;RECUPERA_FEVI&quot;,&quot;CRT&quot;,&quot;QRS_gt_120&quot;,&quot;ICD&quot;,&quot;TRANSPLANT&quot;,&quot;SMOKING&quot;,&quot;HYPERTENSION&quot;,&quot;DYSLIPIDEMIA&quot;,&quot;RHYTHM&quot;,&quot;SITUATION_INITIAL_EVALUATION&quot;,&quot;DIABETES_MELLITUS&quot;,&quot;COPD&quot;)]
+SuppTable2&lt;-SuppTable2[,c(&quot;FINAL_EJECTION_FRACTION&quot;,&quot;DIASTOLIC_DIAMETER_FINAL&quot;,&quot;SYSTOLIC_DIAMETER&quot;,&quot;NYHA_CLASS&quot;,&quot;CURRENT_DRINKER&quot;,&quot;DEATH&quot;,&quot;RECUPERA_FEVI&quot;,&quot;CRT&quot;,&quot;QRS_gt_120&quot;,&quot;ICD&quot;,&quot;TRANSPLANT&quot;,&quot;SMOKING&quot;,&quot;HYPERTENSION&quot;,&quot;DYSLIPIDEMIA&quot;,&quot;RHYTHM&quot;,&quot;SITUATION_INITIAL_EVALUATION&quot;,&quot;DIABETES_MELLITUS&quot;,&quot;COPD&quot;)]
+SuppTable3&lt;-SuppTable3[,c(&quot;FINAL_EJECTION_FRACTION&quot;,&quot;DIASTOLIC_DIAMETER_FINAL&quot;,&quot;SYSTOLIC_DIAMETER&quot;,&quot;NYHA_CLASS&quot;,&quot;CURRENT_DRINKER&quot;,&quot;DEATH&quot;,&quot;RECUPERA_FEVI&quot;,&quot;CRT&quot;,&quot;QRS_gt_120&quot;,&quot;ICD&quot;,&quot;TRANSPLANT&quot;,&quot;SMOKING&quot;,&quot;HYPERTENSION&quot;,&quot;DYSLIPIDEMIA&quot;,&quot;RHYTHM&quot;,&quot;SITUATION_INITIAL_EVALUATION&quot;,&quot;DIABETES_MELLITUS&quot;,&quot;COPD&quot;)]
+
+SuppTable&lt;-rbind(SuppTable1,SuppTable2,SuppTable3)
+SuppTable&lt;-t(SuppTable)
+
+colnames(SuppTable) &lt;- c(&quot;DCMVariants_nonTTN[5]&quot;,&quot;GenotypeNegative[122]&quot;,&quot;TTNtv[14]&quot;,&quot;DCMVariants_nonTTN[NA's]&quot;,&quot;GenotypeNegative[NA's]&quot;,&quot;TTNtv[NA's]&quot;,&quot;P-value[TTNtv vs GenotypeNegative]&quot;)
+
+#change order of columns
+#SuppTable&lt;-SuppTable[,c(&quot;TTNtv&quot;,&quot;GenotypeNegative&quot;,&quot;DCMVariants_nonTTN&quot;,&quot;TTNtv[NA's]&quot;,&quot;GenotypeNegative[NA's]&quot;,&quot;DCMVariants_nonTTN[NA's]&quot;,&quot;P-value[TTNtv vs GenotypeNegative]&quot;)]
+
+#pandoc.table(SuppTable, split.table = Inf)
+# pander(SuppTable)
+panderOptions('table.split.table', 800)
+pander(SuppTable)</code></pre>
+<table style="width:100%;">
+<colgroup>
+<col width="19%"></col>
+<col width="13%"></col>
+<col width="13%"></col>
+<col width="7%"></col>
+<col width="14%"></col>
+<col width="13%"></col>
+<col width="7%"></col>
+<col width="10%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center"> </th>
+<th align="center">DCMVariants_nonTTN[5]</th>
+<th align="center">GenotypeNegative[122]</th>
+<th align="center">TTNtv[14]</th>
+<th align="center">DCMVariants_nonTTN[NA’s]</th>
+<th align="center">GenotypeNegative[NA’s]</th>
+<th align="center">TTNtv[NA’s]</th>
+<th align="center">P-value[TTNtv vs GenotypeNegative]</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center"><strong>FINAL_EJECTION_FRACTION</strong></td>
+<td align="center">40.2 ± 17.54</td>
+<td align="center">42.19 ± 14.94</td>
+<td align="center">41.86 ± 13.58</td>
+<td align="center">0</td>
+<td align="center">4</td>
+<td align="center">0</td>
+<td align="center">0.941</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>DIASTOLIC_DIAMETER_FINAL</strong></td>
+<td align="center">53.33 ± 2.52</td>
+<td align="center">58.58 ± 9.51</td>
+<td align="center">55.91 ± 9.31</td>
+<td align="center">2</td>
+<td align="center">18</td>
+<td align="center">3</td>
+<td align="center">0.4351</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>SYSTOLIC_DIAMETER</strong></td>
+<td align="center">49.5 ± 21.92</td>
+<td align="center">55.88 ± 10.2</td>
+<td align="center">58.2 ± 10.47</td>
+<td align="center">3</td>
+<td align="center">56</td>
+<td align="center">9</td>
+<td align="center">0.9462</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>NYHA_CLASS</strong></td>
+<td align="center">2.4 ± 1.14</td>
+<td align="center">2.37 ± 0.91</td>
+<td align="center">2.21 ± 0.7</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0.6978</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>CURRENT_DRINKER</strong></td>
+<td align="center">1 (20%)</td>
+<td align="center">59 (48.4%)</td>
+<td align="center">4 (28.6%)</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0.6892</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>DEATH</strong></td>
+<td align="center">2 (40%)</td>
+<td align="center">8 (6.6%)</td>
+<td align="center">1 (7.1%)</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>RECUPERA_FEVI</strong></td>
+<td align="center">1 (20%)</td>
+<td align="center">60 (49.2%)</td>
+<td align="center">7 (50%)</td>
+<td align="center">0</td>
+<td align="center">4</td>
+<td align="center">0</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>CRT</strong></td>
+<td align="center">0 (0%)</td>
+<td align="center">20 (16.4%)</td>
+<td align="center">2 (14.3%)</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>QRS_gt_120</strong></td>
+<td align="center">3 (60%)</td>
+<td align="center">38 (31.1%)</td>
+<td align="center">3 (21.4%)</td>
+<td align="center">0</td>
+<td align="center">1</td>
+<td align="center">0</td>
+<td align="center">0.5508</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>ICD</strong></td>
+<td align="center">0 (0%)</td>
+<td align="center">30 (24.6%)</td>
+<td align="center">7 (50%)</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0.0576</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>TRANSPLANT</strong></td>
+<td align="center">1 (20%)</td>
+<td align="center">11 (9%)</td>
+<td align="center">2 (14.3%)</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0.6244</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>SMOKING</strong></td>
+<td align="center">2 (40%)</td>
+<td align="center">55 (45.1%)</td>
+<td align="center">4 (28.6%)</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0.2702</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>HYPERTENSION</strong></td>
+<td align="center">1 (20%)</td>
+<td align="center">67 (54.9%)</td>
+<td align="center">4 (28.6%)</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0.0891</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>DYSLIPIDEMIA</strong></td>
+<td align="center">1 (20%)</td>
+<td align="center">50 (41%)</td>
+<td align="center">6 (42.9%)</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>RHYTHM</strong></td>
+<td align="center">3 (60%)</td>
+<td align="center">40 (32.8%)</td>
+<td align="center">5 (35.7%)</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">1</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>SITUATION_INITIAL_EVALUATION</strong></td>
+<td align="center">4 (80%)</td>
+<td align="center">73 (59.8%)</td>
+<td align="center">8 (57.1%)</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>DIABETES_MELLITUS</strong></td>
+<td align="center">2 (40%)</td>
+<td align="center">36 (29.5%)</td>
+<td align="center">5 (35.7%)</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0.7592</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>COPD</strong></td>
+<td align="center">2 (40%)</td>
+<td align="center">33 (27%)</td>
+<td align="center">3 (21.4%)</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0.7601</td>
+</tr>
+</tbody>
+</table>
 <pre class="r"><code>ACM_survival &lt;- ACM[,c(&quot;BRUID&quot;,&quot;VarGroup&quot;,&quot;DATE_INITIAL_CLINICAL_ASSESSMENT&quot;,&quot;DATE_OF_LAST_CONSULTATION&quot;,&quot;DEATH&quot;,&quot;DATE_OF_DEATH&quot;,&quot;TRANSPLANT&quot;,&quot;DATE_OF_TRANSPLANT&quot;,&quot;Gr_alcohol&quot;,&quot;AGE_AT_INITIAL_CLINICAL_ASSESSMENT&quot;,&quot;INITIAL_EJECTION_FRACTION&quot;,&quot;DIASTOLIC_DIAMETER&quot;,&quot;SEX&quot;,&quot;ATRIAL_FIBRILLATION&quot;,&quot;FAMILY_HISTORY_OF_CARDIOMYOPATHY&quot;,&quot;FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH&quot;)]
 
 #Add a column : Time (days)
@@ -476,7 +775,9 @@ ACM_survival &lt;- ACM_survival[,c(&quot;BRUID&quot;,&quot;TIME&quot;,&quot;EVEN
 colnames(ACM_survival) &lt;- c(&quot;BRUID&quot;,&quot;TIME&quot;,&quot;EVENT&quot;, &quot;GENETIC_STATUS&quot;,&quot;Gr_alcohol&quot;,&quot;AGE_AT_INITIAL_CLINICAL_ASSESSMENT&quot;,&quot;INITIAL_EJECTION_FRACTION&quot;,&quot;DIASTOLIC_DIAMETER&quot;,&quot;SEX&quot;,&quot;ATRIAL_FIBRILLATION&quot;,&quot;FAMILY_HISTORY_OF_CARDIOMYOPATHY&quot;,&quot;FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH&quot;)
 
 #write table
-  write.table(ACM_survival, quote=FALSE, sep =&quot;\t&quot;, row.names = F, file=&quot;../ACM_Survival_Analysis_input.txt&quot;) </code></pre>
+  write.table(ACM_survival, quote=FALSE, sep =&quot;\t&quot;, row.names = F, file=&quot;../ACM_Survival_Analysis_input.txt&quot;) 
+
+  #pander(ACM_survival)</code></pre>
 </div>
 
 

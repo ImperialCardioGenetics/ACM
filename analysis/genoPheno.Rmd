@@ -162,7 +162,6 @@ ACM$SEX[ACM$SEX=="2"] <- 0
 
 #To Do
 # AGE oF SYMPTOM
-# NYHA CLASS 
 
 continuousVariable_summary <- function(x){
   c<-paste(round(mean(x,na.rm=T), digits=2)," \u00b1 ", round(sd(x,na.rm=T), digits=2), sep="")
@@ -258,6 +257,104 @@ pander(MainTable)
 
 ```
 
+```{r}
+
+#To Do
+# NYHA CLASS is categorical - currently treated as continuous variable 
+# Like the header in above : Number in each group in column names is hard coded. Need to be fixed 
+
+SuppTable1 <- ACM %>%
+  group_by(VarGroup) %>%
+  summarise(
+    #total=n(),
+    #continuous Variables
+	FINAL_EJECTION_FRACTION=continuousVariable_summary(FINAL_EJECTION_FRACTION),
+	DIASTOLIC_DIAMETER_FINAL=continuousVariable_summary(DIASTOLIC_DIAMETER_FINAL),
+	SYSTOLIC_DIAMETER=continuousVariable_summary(SYSTOLIC_DIAMETER),
+	NYHA_CLASS=continuousVariable_summary(NYHA_CLASS),
+    #binary Variables
+	CURRENT_DRINKER=binaryVariable_summary(CURRENT_DRINKER,n()),
+	DEATH=binaryVariable_summary(DEATH,n()),
+	RECUPERA_FEVI=binaryVariable_summary(RECUPERA_FEVI,n()),	
+	CRT=binaryVariable_summary(CRT,n()),
+	QRS_gt_120=binaryVariable_summary(QRS_gt_120,n()),
+	ICD=binaryVariable_summary(ICD,n()),
+	TRANSPLANT=binaryVariable_summary(TRANSPLANT,n()),
+	SMOKING=binaryVariable_summary(SMOKING,n()),
+	HYPERTENSION=binaryVariable_summary(HYPERTENSION,n()),
+	DYSLIPIDEMIA=binaryVariable_summary(DYSLIPIDEMIA,n()),
+	RHYTHM=binaryVariable_summary(RHYTHM,n()),	
+	SITUATION_INITIAL_EVALUATION=binaryVariable_summary(SITUATION_INITIAL_EVALUATION,n()),
+	DIABETES_MELLITUS=binaryVariable_summary(DIABETES_MELLITUS,n()),
+	COPD=binaryVariable_summary(COPD,n())
+    ) 
+	
+SuppTable2 <- ACM %>%
+  group_by(VarGroup) %>%
+  summarise(
+	FINAL_EJECTION_FRACTION=sum(is.na(FINAL_EJECTION_FRACTION)),
+	DIASTOLIC_DIAMETER_FINAL=sum(is.na(DIASTOLIC_DIAMETER_FINAL)),
+	SYSTOLIC_DIAMETER=sum(is.na(SYSTOLIC_DIAMETER)),
+	NYHA_CLASS=sum(is.na(NYHA_CLASS)),
+	CURRENT_DRINKER=sum(is.na(CURRENT_DRINKER)),
+	DEATH=sum(is.na(DEATH)),
+	RECUPERA_FEVI=sum(is.na(RECUPERA_FEVI)),	
+	CRT=sum(is.na(CRT)),
+	QRS_gt_120=sum(is.na(QRS_gt_120)),
+	ICD=sum(is.na(ICD)),
+	TRANSPLANT=sum(is.na(TRANSPLANT)),
+	SMOKING=sum(is.na(SMOKING)),
+	HYPERTENSION=sum(is.na(HYPERTENSION)),
+	DYSLIPIDEMIA=sum(is.na(DYSLIPIDEMIA)),
+	RHYTHM=sum(is.na(RHYTHM)),	
+	SITUATION_INITIAL_EVALUATION=sum(is.na(SITUATION_INITIAL_EVALUATION)),
+	DIABETES_MELLITUS=sum(is.na(DIABETES_MELLITUS)),
+	COPD=sum(is.na(COPD))
+    ) 
+	
+SuppTable3 <- ACM %>%
+  filter(VarGroup=="TTNtv" | VarGroup=="GenotypeNegative") %>%
+  summarise(
+	FINAL_EJECTION_FRACTION=with(.,round(digits=4,wilcox.test(FINAL_EJECTION_FRACTION ~ VarGroup)$p.val)),
+	DIASTOLIC_DIAMETER_FINAL=with(.,round(digits=4,wilcox.test(DIASTOLIC_DIAMETER_FINAL ~ VarGroup)$p.val)),
+	SYSTOLIC_DIAMETER=with(.,round(digits=4,wilcox.test(SYSTOLIC_DIAMETER ~ VarGroup)$p.val)),
+	NYHA_CLASS=with(.,round(digits=4,wilcox.test(NYHA_CLASS ~ VarGroup)$p.val)),
+	
+	CURRENT_DRINKER=with(., round(digits=4,fisher.test(x=CURRENT_DRINKER,y=VarGroup)$p.val)),
+	DEATH=with(., round(digits=4,fisher.test(x=DEATH,y=VarGroup)$p.val)),
+	RECUPERA_FEVI=with(., round(digits=4,fisher.test(x=RECUPERA_FEVI,y=VarGroup)$p.val)),	
+	CRT=with(., round(digits=4,fisher.test(x=CRT,y=VarGroup)$p.val)),
+	QRS_gt_120=with(., round(digits=4,fisher.test(x=QRS_gt_120,y=VarGroup)$p.val)),
+	ICD=with(., round(digits=4,fisher.test(x=ICD,y=VarGroup)$p.val)),
+	TRANSPLANT=with(., round(digits=4,fisher.test(x=TRANSPLANT,y=VarGroup)$p.val)),
+	SMOKING=with(., round(digits=4,fisher.test(x=SMOKING,y=VarGroup)$p.val)),
+	HYPERTENSION=with(., round(digits=4,fisher.test(x=HYPERTENSION,y=VarGroup)$p.val)),
+	DYSLIPIDEMIA=with(., round(digits=4,fisher.test(x=DYSLIPIDEMIA,y=VarGroup)$p.val)),
+	RHYTHM=with(., round(digits=4,fisher.test(x=RHYTHM,y=VarGroup)$p.val)),	
+	SITUATION_INITIAL_EVALUATION=with(., round(digits=4,fisher.test(x=SITUATION_INITIAL_EVALUATION,y=VarGroup)$p.val)),
+	DIABETES_MELLITUS=with(., round(digits=4,fisher.test(x=DIABETES_MELLITUS,y=VarGroup)$p.val)),
+	COPD=with(., round(digits=4,fisher.test(x=COPD,y=VarGroup)$p.val))
+    ) 
+	
+
+SuppTable1<-SuppTable1[,c("FINAL_EJECTION_FRACTION","DIASTOLIC_DIAMETER_FINAL","SYSTOLIC_DIAMETER","NYHA_CLASS","CURRENT_DRINKER","DEATH","RECUPERA_FEVI","CRT","QRS_gt_120","ICD","TRANSPLANT","SMOKING","HYPERTENSION","DYSLIPIDEMIA","RHYTHM","SITUATION_INITIAL_EVALUATION","DIABETES_MELLITUS","COPD")]
+SuppTable2<-SuppTable2[,c("FINAL_EJECTION_FRACTION","DIASTOLIC_DIAMETER_FINAL","SYSTOLIC_DIAMETER","NYHA_CLASS","CURRENT_DRINKER","DEATH","RECUPERA_FEVI","CRT","QRS_gt_120","ICD","TRANSPLANT","SMOKING","HYPERTENSION","DYSLIPIDEMIA","RHYTHM","SITUATION_INITIAL_EVALUATION","DIABETES_MELLITUS","COPD")]
+SuppTable3<-SuppTable3[,c("FINAL_EJECTION_FRACTION","DIASTOLIC_DIAMETER_FINAL","SYSTOLIC_DIAMETER","NYHA_CLASS","CURRENT_DRINKER","DEATH","RECUPERA_FEVI","CRT","QRS_gt_120","ICD","TRANSPLANT","SMOKING","HYPERTENSION","DYSLIPIDEMIA","RHYTHM","SITUATION_INITIAL_EVALUATION","DIABETES_MELLITUS","COPD")]
+
+SuppTable<-rbind(SuppTable1,SuppTable2,SuppTable3)
+SuppTable<-t(SuppTable)
+
+colnames(SuppTable) <- c("DCMVariants_nonTTN[5]","GenotypeNegative[122]","TTNtv[14]","DCMVariants_nonTTN[NA's]","GenotypeNegative[NA's]","TTNtv[NA's]","P-value[TTNtv vs GenotypeNegative]")
+
+#change order of columns
+#SuppTable<-SuppTable[,c("TTNtv","GenotypeNegative","DCMVariants_nonTTN","TTNtv[NA's]","GenotypeNegative[NA's]","DCMVariants_nonTTN[NA's]","P-value[TTNtv vs GenotypeNegative]")]
+
+#pandoc.table(SuppTable, split.table = Inf)
+# pander(SuppTable)
+panderOptions('table.split.table', 800)
+pander(SuppTable)
+```
+
 
 ```{r stats, include=FALSE}
 
@@ -309,5 +406,6 @@ colnames(ACM_survival) <- c("BRUID","TIME","EVENT", "GENETIC_STATUS","Gr_alcohol
 #write table
   write.table(ACM_survival, quote=FALSE, sep ="\t", row.names = F, file="../ACM_Survival_Analysis_input.txt") 
 
+  #pander(ACM_survival)
 ```
 
