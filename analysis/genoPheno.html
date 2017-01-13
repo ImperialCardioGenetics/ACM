@@ -778,6 +778,22 @@ colnames(ACM_survival) &lt;- c(&quot;BRUID&quot;,&quot;TIME&quot;,&quot;EVENT&qu
   write.table(ACM_survival, quote=FALSE, sep =&quot;\t&quot;, row.names = F, file=&quot;../ACM_Survival_Analysis_input.txt&quot;) 
 
   #pander(ACM_survival)</code></pre>
+<pre class="r"><code>DCM &lt;- read.table(&quot;../DCM_pheno.txt&quot;, header=T, sep='\t')
+HVOL &lt;- read.table(&quot;../HVOL_pheno.txt&quot;, header=T, sep='\t')
+
+DCM &lt;- DCM[,c(&quot;group&quot;, &quot;SEX&quot;,&quot;AGE_AT_scan&quot;,&quot;EF&quot;,&quot;DD&quot;,&quot;Ethnicity&quot;)]
+HVOL &lt;- HVOL[,c(&quot;group&quot;, &quot;SEX&quot;,&quot;AGE_AT_scan&quot;,&quot;EF&quot;,&quot;DD&quot;,&quot;Ethnicity&quot;)]
+
+ACM &lt;- ACM[,c(&quot;SEX&quot;,&quot;AGE_AT_INITIAL_CLINICAL_ASSESSMENT&quot;,&quot;INITIAL_EJECTION_FRACTION&quot;,&quot;DIASTOLIC_DIAMETER&quot;)]
+ACM &lt;-cbind(group = 'ACM', ACM, Ethnicity ='C')
+colnames(ACM) &lt;- c(&quot;group&quot;, &quot;SEX&quot;,&quot;AGE_AT_scan&quot;,&quot;EF&quot;,&quot;DD&quot;,&quot;Ethnicity&quot;)
+
+dim(DCM)</code></pre>
+<pre><code>## [1] 366   6</code></pre>
+<pre class="r"><code>dim(HVOL)</code></pre>
+<pre><code>## [1] 445   6</code></pre>
+<pre class="r"><code>dim(ACM)</code></pre>
+<pre><code>## [1] 141   6</code></pre>
 </div>
 
 

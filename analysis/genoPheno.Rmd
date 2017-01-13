@@ -411,6 +411,19 @@ colnames(ACM_survival) <- c("BRUID","TIME","EVENT", "GENETIC_STATUS","Gr_alcohol
 
 ```{r ACM vs DCM vs HVOL }
 
+DCM <- read.table("../DCM_pheno.txt", header=T, sep='\t')
+HVOL <- read.table("../HVOL_pheno.txt", header=T, sep='\t')
+
+DCM <- DCM[,c("group", "SEX","AGE_AT_scan","EF","DD","Ethnicity")]
+HVOL <- HVOL[,c("group", "SEX","AGE_AT_scan","EF","DD","Ethnicity")]
+
+ACM <- ACM[,c("SEX","AGE_AT_INITIAL_CLINICAL_ASSESSMENT","INITIAL_EJECTION_FRACTION","DIASTOLIC_DIAMETER")]
+ACM <-cbind(group = 'ACM', ACM, Ethnicity ='C')
+colnames(ACM) <- c("group", "SEX","AGE_AT_scan","EF","DD","Ethnicity")
+
+dim(DCM)
+dim(HVOL)
+dim(ACM)
 
 ```
 
