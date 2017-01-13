@@ -21,8 +21,12 @@ require(gdata)
 BRUID_localID <- read.csv("../BRUID_localID.csv", header=T, sep=',') %>%
   tbl_df
 
-#Genotypes of ACM Samples [From Liz]
-ACM_geno <- read.csv("../Samples_pathogenics_variants.csv", header=T, sep=',') %>%
+#List of Samples from ACM TTNtv Group [From Liz]
+ACM_TTNtv_Group <- read.table("../ACM_TTNtv_group.txt", header=T) %>%
+  tbl_df
+
+#List of Samples from ACM DCM_var_nonTTN Group [From Liz]
+ACM_DCM_var_nonTTN_Group <- read.table("../ACM_DCM_var_nonTTN_group.txt", header=T) %>%
   tbl_df
 
 #Clinical Phenotype of ACM Samples [From Spanish Team]
@@ -68,6 +72,7 @@ for (i in 1:count){
 }
 
 #manual assignments, not in the coversion table or were not comparable due to typos
+ACM_pheno_colNames<-gsub("FibrilaAuricular", "ATRIAL FIBRILLATION", ACM_pheno_colNames,ignore.case = TRUE)
 ACM_pheno_colNames<-gsub("Fecha.DEATH", "DATE OF DEATH", ACM_pheno_colNames,ignore.case = TRUE)
 ACM_pheno_colNames<-gsub("Fecha.TRANSPLANT","DATE OF TRANSPLANT", ACM_pheno_colNames,ignore.case = TRUE)
 ACM_pheno_colNames<-gsub("EDAD.UltC","AGE AT LAST CONSULTATION", ACM_pheno_colNames,ignore.case = TRUE)
@@ -95,9 +100,7 @@ colnames(ACM_pheno)<- ACM_pheno_colNames
 
 ```
 
-## Combine all datasets
-```{r combine data}
-
+```{r tidy datasets to prepare for merge}
 #remove irrelevant columns 
 BRUID_localID <-BRUID_localID[,c("LocalIdNumber","BruNumber")]
 
@@ -109,111 +112,156 @@ BRUID_localID$LocalIdNumber[BRUID_localID$LocalIdNumber == 'BELL-508 BIS'] <- "B
 ACM_pheno_BRUID<-merge(BRUID_localID, ACM_pheno, by.x = "LocalIdNumber", by.y = "SAMPLES", all = TRUE) %>%
   tbl_df
 
-#remove filtered data  
-ACM_geno <- ACM_geno[(ACM_geno$Include  == "Yes"), ]
 
-#remove irrelevant columns 
-ACM_geno <-ACM_geno[,c("GENE","BRUID")]
+#Tidy dataframes of ACM groups [TTNtv, DCMvar_nonTTN, GenoNeg]
 
-ACM <- merge(ACM_geno, ACM_pheno_BRUID, by.x = "BRUID", by.y = "BruNumber", all = TRUE) %>%
+#select first column only
+ACM_TTNtv_Group<-ACM_TTNtv_Group[,1]
+#rename first column to BRUID
+colnames(ACM_TTNtv_Group) <- "BRUID"
+#Add a second column : VarGroup
+ACM_TTNtv_Group<-cbind(ACM_TTNtv_Group,VarGroup="TTNtv")
+
+#select first column only
+ACM_DCM_var_nonTTN_Group<-ACM_DCM_var_nonTTN_Group[,1]
+#rename first column to BRUID
+colnames(ACM_DCM_var_nonTTN_Group) <- "BRUID"
+#Add a second column : VarGroup
+ACM_DCM_var_nonTTN_Group<-cbind(ACM_DCM_var_nonTTN_Group,VarGroup="DCMVariant_nonTTN")
+
+ACM_groups=rbind(ACM_TTNtv_Group,ACM_DCM_var_nonTTN_Group)
+
+```
+
+
+## Combine all datasets
+```{r combine data}
+
+ACM <- merge(ACM_groups, ACM_pheno_BRUID, by.x = "BRUID", by.y = "BruNumber", all = TRUE) %>%
   tbl_df
 
-#replace na values in GENE column 
-ACM$GENE <- as.character(ACM$GENE)
-ACM$GENE[is.na(ACM$GENE)] <- "genotype_negative"
+#Update VarGroup of GenotypeNegative
+ACM$VarGroup <- as.character(ACM$VarGroup)
+ACM$VarGroup[is.na(ACM$VarGroup)] <- "GenotypeNegative"
 
 dim(ACM)
 
 ```
 
+```{r Prepare data for analysis}
+#SEX is coded 1=Male, 2=Female, change 0=Female
+#For easier calculations, it's easier to work with 1 and 0
+ACM$SEX[ACM$SEX=="2"] <- 0
+```
 
 
-## data summary table 
-```{r summarise acm phenotype by genotype}
+```{r Get Mean and Std.Dev}
+
+#To Do
+# AGE oF SYMPTOM
+# NYHA CLASS 
 
 continuousVariable_summary <- function(x){
-  c<-paste(round(mean(x,na.rm=T), digits=2)," \u00b1 ", round(sd(x,na.rm=T)), sep="")
+  c<-paste(round(mean(x,na.rm=T), digits=2)," \u00b1 ", round(sd(x,na.rm=T), digits=2), sep="")
 return(c)
 }
 
-binaryVariable_summary <- function(x,y){
-  b<-paste(round(sum(x,na.rm=T))," \u0028",round(((sum(x,na.rm=T)/y) * 100), digits=1),"\u0029", sep="")
+binaryVariable_summary <- function(e,f){
+  b<-paste(round(sum(e,na.rm=T))," \u0028",round(((sum(e,na.rm=T)/f) * 100), digits=1),"\u0025\u0029", sep="")
 return(b)
 }
 
 
-ACM %>%
-  #exclude samples with other_dcm_mutations, unless they are TTN pos
-  filter(GENE=="TTN" | GENE=="genotype_negative") %>% 
-group_by(GENE) %>%
+#To Do
+# AGE oF SYMPTOM
+# NYHA CLASS 
+# Did `na.rm=T` here, because there was some missing data. Need to check if this appropriate.
+
+MainTable1 <- ACM %>%
+group_by(VarGroup) %>%
   summarise(
-    total=n(),
+    #total=n(),
+    #continuous Variables
     Gr_alcohol=continuousVariable_summary(Gr_alcohol),
     AGE_AT_INITIAL_CLINICAL_ASSESSMENT=continuousVariable_summary(AGE_AT_INITIAL_CLINICAL_ASSESSMENT),
     INITIAL_EJECTION_FRACTION=continuousVariable_summary(INITIAL_EJECTION_FRACTION),
-    FINAL_EJECTION_FRACTION=continuousVariable_summary(FINAL_EJECTION_FRACTION),
     DIASTOLIC_DIAMETER=continuousVariable_summary(DIASTOLIC_DIAMETER),
-    DIASTOLIC_DIAMETER_FINAL=continuousVariable_summary(DIASTOLIC_DIAMETER_FINAL),
-    SYSTOLIC_DIAMETER=continuousVariable_summary(SYSTOLIC_DIAMETER),
-    FibrilaAuricular=binaryVariable_summary(FibrilaAuricular,n()),
+    #binary Variables
+    SEX=binaryVariable_summary(SEX,n()),
+    ATRIAL_FIBRILLATION=binaryVariable_summary(ATRIAL_FIBRILLATION,n()),
     FAMILY_HISTORY_OF_CARDIOMYOPATHY=binaryVariable_summary(FAMILY_HISTORY_OF_CARDIOMYOPATHY,n()),
-    FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH=binaryVariable_summary(FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH,n()),
-    DEATH=binaryVariable_summary(DEATH,n()),
-    SITUATION_INITIAL_EVALUATION=binaryVariable_summary(SITUATION_INITIAL_EVALUATION,n()),
-    RECUPERA_FEVI=binaryVariable_summary(RECUPERA_FEVI,n()),
-    CURRENT_DRINKER=binaryVariable_summary(CURRENT_DRINKER,n()),
-    CRT=binaryVariable_summary(CRT,n()),
-    QRS_gt_120=binaryVariable_summary(QRS_gt_120,n()),
-    ICD=binaryVariable_summary(ICD,n()),
-    TRANSPLANT=binaryVariable_summary(TRANSPLANT,n()),
-    SMOKING=binaryVariable_summary(SMOKING,n()),
-    RHYTHM=binaryVariable_summary(RHYTHM,n()),
-    HYPERTENSION=binaryVariable_summary(HYPERTENSION,n()),
-    DYSLIPIDEMIA=binaryVariable_summary(DYSLIPIDEMIA,n()),
-    DIABETES_MELLITUS=binaryVariable_summary(DIABETES_MELLITUS,n()),
-    COPD=binaryVariable_summary(COPD,n())
-    ) %>%
-  t %>% #transposes if you like that way...
-  pander
+    FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH=binaryVariable_summary(FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH,n())
+    ) 
+
 ```
 
-I had to do `na.rm=T` here, because there was some missing data. Need to check if this appropriate.
-
-## STATS Wilcoxon rank sum test 
-```{r stats, include=FALSE}
 
 
-
-ACM %>%
-  filter(GENE=="TTN" | GENE=="genotype_negative") %>%
-  #with(.,wilcox.test(INITIAL_EJECTION_FRACTION ~ GENE))
-  with(.,chisq.test(x=RHYTHM,y=GENE))
-```
-
-```{r}
-ACM %>%
-  filter(GENE=="TTN" | GENE=="genotype_negative") %>%
+```{r get number of NAs}
+MainTable2 <- ACM %>%
+  group_by(VarGroup) %>%
   summarise(
-    FibrilaAuricular=with(., chisq.test(x=FibrilaAuricular,y=GENE)$p.val),
-    NYHA_CLASS=with(., chisq.test(x=NYHA_CLASS,y=GENE)$p.val),
-    FAMILY_HISTORY_OF_CARDIOMYOPATHY=with(., chisq.test(x=FAMILY_HISTORY_OF_CARDIOMYOPATHY,y=GENE)$p.val),
-    FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH=with(., chisq.test(x=FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH,y=GENE)$p.val),
-    DEATH=with(., chisq.test(x=DEATH,y=GENE)$p.val),
-    SITUATION_INITIAL_EVALUATION=with(., chisq.test(x=SITUATION_INITIAL_EVALUATION,y=GENE)$p.val),
-    RECUPERA_FEVI=with(., chisq.test(x=RECUPERA_FEVI,y=GENE)$p.val),
-    CURRENT_DRINKER=with(., chisq.test(x=CURRENT_DRINKER,y=GENE)$p.val),
-    INITIAL_EJECTION_FRACTION=with(.,wilcox.test(INITIAL_EJECTION_FRACTION ~ GENE)$p.val),
-    DIASTOLIC_DIAMETER=with(.,wilcox.test(DIASTOLIC_DIAMETER ~ GENE)$p.val),
-    Gr_alcohol=with(.,wilcox.test(Gr_alcohol ~ GENE)$p.val),
-    SYSTOLIC_DIAMETER=with(.,wilcox.test(SYSTOLIC_DIAMETER ~ GENE)$p.val),
-    AGE_AT_INITIAL_CLINICAL_ASSESSMENT=with(.,wilcox.test(AGE_AT_INITIAL_CLINICAL_ASSESSMENT ~ GENE)$p.val)
-  )%>%
-  t %>% #transposes if you like that way...
-  pander
+    Gr_alcohol=sum(is.na(Gr_alcohol)),
+    AGE_AT_INITIAL_CLINICAL_ASSESSMENT=sum(is.na(AGE_AT_INITIAL_CLINICAL_ASSESSMENT)),
+    INITIAL_EJECTION_FRACTION=sum(is.na(INITIAL_EJECTION_FRACTION)),
+    DIASTOLIC_DIAMETER=sum(is.na(DIASTOLIC_DIAMETER)),
+    SEX=sum(is.na(SEX)),
+    ATRIAL_FIBRILLATION=sum(is.na(ATRIAL_FIBRILLATION)),
+    FAMILY_HISTORY_OF_CARDIOMYOPATHY=sum(is.na(FAMILY_HISTORY_OF_CARDIOMYOPATHY)),
+    FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH=sum(is.na(FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH))
+  ) 
   
 ```
 
+```{r get P-values}
+#Mann-Whitney or wilcox.test : continuous (not normal) vs categorical (binary) 
+#Fisher Test : categorical (binary) vs categorical (binary) 
 
 
-Actually - looking at the output of the t.test, you could just get the means of the two group from there.  Or use the summary method above. Using wilcox.test as data is not normally distributed. This does not give mean and std dev
+MainTable3 <- ACM %>%
+  filter(VarGroup=="TTNtv" | VarGroup=="GenotypeNegative") %>%
+  summarise(
+    Gr_alcohol=with(.,round(digits=4,wilcox.test(Gr_alcohol ~ VarGroup)$p.val)),
+    AGE_AT_INITIAL_CLINICAL_ASSESSMENT=with(.,round(digits=4,wilcox.test(AGE_AT_INITIAL_CLINICAL_ASSESSMENT ~ VarGroup)$p.val)),
+    INITIAL_EJECTION_FRACTION=with(.,round(digits=4,wilcox.test(INITIAL_EJECTION_FRACTION ~ VarGroup)$p.val)),
+    DIASTOLIC_DIAMETER=with(.,round(digits=4,wilcox.test(DIASTOLIC_DIAMETER ~ VarGroup)$p.val)),
+    SEX=with(., round(digits=4,fisher.test(x=SEX,y=VarGroup)$p.val)),
+    ATRIAL_FIBRILLATION=with(., round(digits=4,fisher.test(x=ATRIAL_FIBRILLATION,y=VarGroup)$p.val)),
+    FAMILY_HISTORY_OF_CARDIOMYOPATHY=with(., round(digits=4,fisher.test(x=FAMILY_HISTORY_OF_CARDIOMYOPATHY,y=VarGroup)$p.val)),
+    FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH=with(., round(digits=4,fisher.test(x=FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH,y=VarGroup)$p.val))
+  )
+```
+
+```{r Combine all above into one table}
+#To DO
+# Number in each group in column names is hard coded. Need to be fixed  
+
+MainTable1<-MainTable1[,c("Gr_alcohol","AGE_AT_INITIAL_CLINICAL_ASSESSMENT","INITIAL_EJECTION_FRACTION","DIASTOLIC_DIAMETER","SEX","ATRIAL_FIBRILLATION","FAMILY_HISTORY_OF_CARDIOMYOPATHY","FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH")]
+MainTable2<-MainTable2[,c("Gr_alcohol","AGE_AT_INITIAL_CLINICAL_ASSESSMENT","INITIAL_EJECTION_FRACTION","DIASTOLIC_DIAMETER","SEX","ATRIAL_FIBRILLATION","FAMILY_HISTORY_OF_CARDIOMYOPATHY","FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH")]
+MainTable3<-MainTable3[,c("Gr_alcohol","AGE_AT_INITIAL_CLINICAL_ASSESSMENT","INITIAL_EJECTION_FRACTION","DIASTOLIC_DIAMETER","SEX","ATRIAL_FIBRILLATION","FAMILY_HISTORY_OF_CARDIOMYOPATHY","FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH")]
+
+MainTable<-rbind(MainTable1,MainTable2,MainTable3)
+MainTable<-t(MainTable)
+
+colnames(MainTable) <- c("DCMVariants_nonTTN[5]","GenotypeNegative[122]","TTNtv[14]","DCMVariants_nonTTN[NA's]","GenotypeNegative[NA's]","TTNtv[NA's]","P-value[TTNtv vs GenotypeNegative]")
+
+#change order of columns
+#MainTable<-MainTable[,c("TTNtv","GenotypeNegative","DCMVariants_nonTTN","TTNtv[NA's]","GenotypeNegative[NA's]","DCMVariants_nonTTN[NA's]","P-value[TTNtv vs GenotypeNegative]")]
+
+#pandoc.table(MainTable, split.table = Inf)
+# pander(MainTable)
+panderOptions('table.split.table', 800)
+pander(MainTable)
+
+```
+
+
+```{r stats, include=FALSE}
+
+ACM %>%
+  filter(VarGroup=="TTNtv" | VarGroup=="GenotypeNegative") %>%
+  #with(.,wilcox.test(INITIAL_EJECTION_FRACTION ~ GENE))
+  with(.,fisher.test(x=RHYTHM,y=VarGroup))
+
+```
 
