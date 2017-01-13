@@ -257,7 +257,7 @@ pander(MainTable)
 
 ```
 
-```{r}
+```{r Supplementary Table 1}
 
 #To Do
 # NYHA CLASS is categorical - currently treated as continuous variable 
@@ -407,5 +407,10 @@ colnames(ACM_survival) <- c("BRUID","TIME","EVENT", "GENETIC_STATUS","Gr_alcohol
   write.table(ACM_survival, quote=FALSE, sep ="\t", row.names = F, file="../ACM_Survival_Analysis_input.txt") 
 
   #pander(ACM_survival)
+```
+
+```{r ACM vs DCM vs HVOL }
+
+
 ```
 

@@ -1,0 +1,58 @@
+---
+title: "DCM_HVOL_generateData"
+author: "risha govind"
+date: "13/01/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Load Data}
+DCM_raw <- read.csv("../DCM_pheno_raw.csv", header=T, sep=',')
+HVOL_raw <- read.csv("../HVOL_pheno_raw.csv", header=T, sep=',')
+postPCA_FinalDataset<- read.table("../Filtered_SampleIDs.txt", header=T, sep='\t')
+
+dim(DCM_raw)
+dim(HVOL_raw)
+```
+
+```{r Filtered Data}
+
+### DCM - post filtering
+DCM_filtered <- subset(DCM_raw, DCM_raw$Bru.Number %in% postPCA_FinalDataset$IID)
+
+
+### HVOL - post filtering
+HVOL_filtered <- subset(HVOL_raw, HVOL_raw$Bru.Number %in% postPCA_FinalDataset$IID)
+
+dim(DCM_filtered)
+dim(HVOL_filtered)
+
+```
+
+```{r Drop Columns}
+
+DCM <- DCM_filtered[,c("Ageatscan_years","AgeatBB_years","Race","Sex","Dcm.Eflv","LVEDVI","Dcm.Edvlv","EtOHXS")]
+HVOL <- HVOL_filtered[,c("Ageatscan_years","Race","Sex","Hvq.Eflv","Hvq.Edvlv")]
+
+#Add a column : group
+DCM<-cbind(DCM,group="DCM")
+HVOL<-cbind(HVOL,group="HVOL")
+
+colnames(DCM) <- c("group", "AGE_AT_scan", "AGE_AT_recruitment", "Ethnicity", "SEX", "EF","LVEDVI", "DD","EtOHXS")
+colnames(DCM) <- c("group", "AGE_AT_scan","Ethnicity", "SEX", "EF","DD")
+
+dim(DCM)
+dim(HVOL)
+```
+
+```{r }
+
+#write table
+  write.table(DCM, quote=FALSE, sep ="\t", row.names = F, file="../DCM_pheno.txt") 
+  write.table(HVOL, quote=FALSE, sep ="\t", row.names = F, file="../HVOL_pheno.txt") 
+
+```
+
