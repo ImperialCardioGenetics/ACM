@@ -230,6 +230,9 @@ colnames(ACM_DCM_var_nonTTN_Group) &lt;- &quot;BRUID&quot;
 #Add a second column : VarGroup
 ACM_DCM_var_nonTTN_Group&lt;-cbind(ACM_DCM_var_nonTTN_Group,VarGroup=&quot;DCMVariant_nonTTN&quot;)
 
+#Remove TTNtv samples from ACM_DCM_var_nonTTN_Group this. 20PC04885 has a TTNtv and a LMNA SNP. This sample is to be in the TTNtv group 
+ACM_DCM_var_nonTTN_Group&lt;-subset(ACM_DCM_var_nonTTN_Group, BRUID!=&quot;20PC04885&quot;)
+
 ACM_groups=rbind(ACM_TTNtv_Group,ACM_DCM_var_nonTTN_Group)</code></pre>
 </div>
 <div id="combine-all-datasets" class="section level2">
@@ -436,6 +439,44 @@ pander(MainTable)</code></pre>
 </tr>
 </tbody>
 </table>
+<pre class="r"><code>ACM_survival &lt;- ACM[,c(&quot;BRUID&quot;,&quot;VarGroup&quot;,&quot;DATE_INITIAL_CLINICAL_ASSESSMENT&quot;,&quot;DATE_OF_LAST_CONSULTATION&quot;,&quot;DEATH&quot;,&quot;DATE_OF_DEATH&quot;,&quot;TRANSPLANT&quot;,&quot;DATE_OF_TRANSPLANT&quot;,&quot;Gr_alcohol&quot;,&quot;AGE_AT_INITIAL_CLINICAL_ASSESSMENT&quot;,&quot;INITIAL_EJECTION_FRACTION&quot;,&quot;DIASTOLIC_DIAMETER&quot;,&quot;SEX&quot;,&quot;ATRIAL_FIBRILLATION&quot;,&quot;FAMILY_HISTORY_OF_CARDIOMYOPATHY&quot;,&quot;FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH&quot;)]
+
+#Add a column : Time (days)
+ACM_survival&lt;-cbind(ACM_survival,TIME=&quot;&quot;)
+ACM_survival&lt;-cbind(ACM_survival,EVENT=&quot;0&quot;)
+ACM_survival&lt;-cbind(ACM_survival,EndDate=&quot;&quot;)
+
+ACM_survival$EndDate &lt;- as.character(ACM_survival$EndDate)
+ACM_survival$EVENT &lt;- as.character(ACM_survival$EVENT)
+
+#Death
+ACM_survival$DATE_OF_DEATH &lt;- as.character(ACM_survival$DATE_OF_DEATH)
+endEvent &lt;- ACM_survival$DEATH==&quot;1&quot;
+ACM_survival[endEvent, &quot;EndDate&quot;] &lt;- ACM_survival[endEvent, &quot;DATE_OF_DEATH&quot;]
+ACM_survival[endEvent, &quot;EVENT&quot;] &lt;- ACM_survival[endEvent, &quot;DEATH&quot;]
+
+#Transplant
+ACM_survival$DATE_OF_TRANSPLANT &lt;- as.character(ACM_survival$DATE_OF_TRANSPLANT)
+endEvent &lt;- ACM_survival$TRANSPLANT==&quot;1&quot;
+ACM_survival[endEvent, &quot;EndDate&quot;] &lt;- ACM_survival[endEvent, &quot;DATE_OF_TRANSPLANT&quot;]
+ACM_survival[endEvent, &quot;EVENT&quot;] &lt;- ACM_survival[endEvent, &quot;TRANSPLANT&quot;]
+
+
+#DATE_OF_LAST_CONSULTATION - for others
+ACM_survival$DATE_OF_LAST_CONSULTATION &lt;- as.character(ACM_survival$DATE_OF_LAST_CONSULTATION)
+endEvent &lt;- ACM_survival$EndDate==&quot;&quot;
+ACM_survival[endEvent, &quot;EndDate&quot;] &lt;- ACM_survival[endEvent, &quot;DATE_OF_LAST_CONSULTATION&quot;]
+
+#Calculate T: number of days between start and end point
+ACM_survival$TIME &lt;- as.Date(as.character(ACM_survival$EndDate), format=&quot;%Y-%m-%d&quot;)-
+                  as.Date(as.character(ACM_survival$DATE_INITIAL_CLINICAL_ASSESSMENT), format=&quot;%Y-%m-%d&quot;)
+
+ACM_survival &lt;- ACM_survival[,c(&quot;BRUID&quot;,&quot;TIME&quot;,&quot;EVENT&quot;, &quot;VarGroup&quot;,&quot;Gr_alcohol&quot;,&quot;AGE_AT_INITIAL_CLINICAL_ASSESSMENT&quot;,&quot;INITIAL_EJECTION_FRACTION&quot;,&quot;DIASTOLIC_DIAMETER&quot;,&quot;SEX&quot;,&quot;ATRIAL_FIBRILLATION&quot;,&quot;FAMILY_HISTORY_OF_CARDIOMYOPATHY&quot;,&quot;FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH&quot;)]
+
+colnames(ACM_survival) &lt;- c(&quot;BRUID&quot;,&quot;TIME&quot;,&quot;EVENT&quot;, &quot;GENETIC_STATUS&quot;,&quot;Gr_alcohol&quot;,&quot;AGE_AT_INITIAL_CLINICAL_ASSESSMENT&quot;,&quot;INITIAL_EJECTION_FRACTION&quot;,&quot;DIASTOLIC_DIAMETER&quot;,&quot;SEX&quot;,&quot;ATRIAL_FIBRILLATION&quot;,&quot;FAMILY_HISTORY_OF_CARDIOMYOPATHY&quot;,&quot;FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH&quot;)
+
+#write table
+  write.table(ACM_survival, quote=FALSE, sep =&quot;\t&quot;, row.names = F, file=&quot;../ACM_Survival_Analysis_input.txt&quot;) </code></pre>
 </div>
 
 
