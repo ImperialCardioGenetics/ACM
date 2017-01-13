@@ -411,19 +411,70 @@ colnames(ACM_survival) <- c("BRUID","TIME","EVENT", "GENETIC_STATUS","Gr_alcohol
 
 ```{r ACM vs DCM vs HVOL }
 
-DCM <- read.table("../DCM_pheno.txt", header=T, sep='\t')
-HVOL <- read.table("../HVOL_pheno.txt", header=T, sep='\t')
+# To Do
+# ? how to add ethnicity to table
 
-DCM <- DCM[,c("group", "SEX","AGE_AT_scan","EF","DD","Ethnicity")]
-HVOL <- HVOL[,c("group", "SEX","AGE_AT_scan","EF","DD","Ethnicity")]
 
-ACM <- ACM[,c("SEX","AGE_AT_INITIAL_CLINICAL_ASSESSMENT","INITIAL_EJECTION_FRACTION","DIASTOLIC_DIAMETER")]
-ACM <-cbind(group = 'ACM', ACM, Ethnicity ='C')
-colnames(ACM) <- c("group", "SEX","AGE_AT_scan","EF","DD","Ethnicity")
+DCM_demo <- read.table("../DCM_pheno.txt", header=T, sep='\t')
+HVOL_demo <- read.table("../HVOL_pheno.txt", header=T, sep='\t')
 
-dim(DCM)
-dim(HVOL)
-dim(ACM)
+DCM_demo <- DCM_demo[,c("group", "SEX","AGE_AT_scan","EF","DD","Ethnicity")]
+HVOL_demo <- HVOL_demo[,c("group", "SEX","AGE_AT_scan","EF","DD","Ethnicity")]
+
+ACM_demo <- ACM[,c("SEX","AGE_AT_INITIAL_CLINICAL_ASSESSMENT","INITIAL_EJECTION_FRACTION","DIASTOLIC_DIAMETER")]
+ACM_demo <-cbind(group = 'ACM', ACM_demo, Ethnicity ='C')
+colnames(ACM_demo) <- c("group", "SEX","AGE_AT_scan","EF","DD","Ethnicity")
+
+dim(DCM_demo)
+dim(HVOL_demo)
+dim(ACM_demo)
+
+ALLgroups <-rbind(ACM_demo,DCM_demo,HVOL_demo)
+
+#make sex 0/1 for easier analysis 
+ALLgroups$SEX[ALLgroups$SEX == "M"] <- 1 
+ALLgroups$SEX[ALLgroups$SEX == "F"] <- 0 
+ALLgroups$SEX[ALLgroups$SEX == 2] <- 0 
+ALLgroups$SEX <- as.numeric(ALLgroups$SEX)
+
+GroupTable1 <- ALLgroups %>%
+group_by(group) %>%
+  summarise(
+    #total=n(),
+    #continuous Variables
+    AGE_AT_scan=continuousVariable_summary(AGE_AT_scan),
+    EF=continuousVariable_summary(EF),
+    DD=continuousVariable_summary(DD),
+    #binary Variables
+    SEX=binaryVariable_summary(SEX,n())
+    
+    ) 
+
+GroupTable2 <- ALLgroups %>%
+  group_by(group) %>%
+  summarise(
+	AGE_AT_scan=sum(is.na(AGE_AT_scan)),
+	EF=sum(is.na(EF)),
+	DD=sum(is.na(DD)),
+	SEX=sum(is.na(SEX))
+    ) 
+
+GroupTable1<-GroupTable1[,c("AGE_AT_scan","EF","DD","SEX")]
+GroupTable2<-GroupTable2[,c("AGE_AT_scan","EF","DD","SEX")]
+
+GroupTable<-rbind(GroupTable1,GroupTable2)
+GroupTable<-t(GroupTable)
+
+colnames(GroupTable) <- c("ACM[141]","DCM[366]","HVOL[445]","ACM[NA's]","DCM[NA's]","HVOL[NA's]")
+rownames(GroupTable) <- c("Age", "EF[MRI/ECHO]","DD/LVEDV","SEX(MALE)")
+#change order of columns
+#GroupTable<-GroupTable[,c("TTNtv","GenotypeNegative","DCMVariants_nonTTN","TTNtv[NA's]","GenotypeNegative[NA's]","DCMVariants_nonTTN[NA's]","P-value[TTNtv vs GenotypeNegative]")]
+
+
+panderOptions('table.split.table', 800)
+pander(GroupTable)
+
+
 
 ```
 

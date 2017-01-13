@@ -778,22 +778,130 @@ colnames(ACM_survival) &lt;- c(&quot;BRUID&quot;,&quot;TIME&quot;,&quot;EVENT&qu
   write.table(ACM_survival, quote=FALSE, sep =&quot;\t&quot;, row.names = F, file=&quot;../ACM_Survival_Analysis_input.txt&quot;) 
 
   #pander(ACM_survival)</code></pre>
-<pre class="r"><code>DCM &lt;- read.table(&quot;../DCM_pheno.txt&quot;, header=T, sep='\t')
-HVOL &lt;- read.table(&quot;../HVOL_pheno.txt&quot;, header=T, sep='\t')
+<pre class="r"><code># To Do
+# ? how to add ethnicity to table
 
-DCM &lt;- DCM[,c(&quot;group&quot;, &quot;SEX&quot;,&quot;AGE_AT_scan&quot;,&quot;EF&quot;,&quot;DD&quot;,&quot;Ethnicity&quot;)]
-HVOL &lt;- HVOL[,c(&quot;group&quot;, &quot;SEX&quot;,&quot;AGE_AT_scan&quot;,&quot;EF&quot;,&quot;DD&quot;,&quot;Ethnicity&quot;)]
 
-ACM &lt;- ACM[,c(&quot;SEX&quot;,&quot;AGE_AT_INITIAL_CLINICAL_ASSESSMENT&quot;,&quot;INITIAL_EJECTION_FRACTION&quot;,&quot;DIASTOLIC_DIAMETER&quot;)]
-ACM &lt;-cbind(group = 'ACM', ACM, Ethnicity ='C')
-colnames(ACM) &lt;- c(&quot;group&quot;, &quot;SEX&quot;,&quot;AGE_AT_scan&quot;,&quot;EF&quot;,&quot;DD&quot;,&quot;Ethnicity&quot;)
+DCM_demo &lt;- read.table(&quot;../DCM_pheno.txt&quot;, header=T, sep='\t')
+HVOL_demo &lt;- read.table(&quot;../HVOL_pheno.txt&quot;, header=T, sep='\t')
 
-dim(DCM)</code></pre>
+DCM_demo &lt;- DCM_demo[,c(&quot;group&quot;, &quot;SEX&quot;,&quot;AGE_AT_scan&quot;,&quot;EF&quot;,&quot;DD&quot;,&quot;Ethnicity&quot;)]
+HVOL_demo &lt;- HVOL_demo[,c(&quot;group&quot;, &quot;SEX&quot;,&quot;AGE_AT_scan&quot;,&quot;EF&quot;,&quot;DD&quot;,&quot;Ethnicity&quot;)]
+
+ACM_demo &lt;- ACM[,c(&quot;SEX&quot;,&quot;AGE_AT_INITIAL_CLINICAL_ASSESSMENT&quot;,&quot;INITIAL_EJECTION_FRACTION&quot;,&quot;DIASTOLIC_DIAMETER&quot;)]
+ACM_demo &lt;-cbind(group = 'ACM', ACM_demo, Ethnicity ='C')
+colnames(ACM_demo) &lt;- c(&quot;group&quot;, &quot;SEX&quot;,&quot;AGE_AT_scan&quot;,&quot;EF&quot;,&quot;DD&quot;,&quot;Ethnicity&quot;)
+
+dim(DCM_demo)</code></pre>
 <pre><code>## [1] 366   6</code></pre>
-<pre class="r"><code>dim(HVOL)</code></pre>
+<pre class="r"><code>dim(HVOL_demo)</code></pre>
 <pre><code>## [1] 445   6</code></pre>
-<pre class="r"><code>dim(ACM)</code></pre>
+<pre class="r"><code>dim(ACM_demo)</code></pre>
 <pre><code>## [1] 141   6</code></pre>
+<pre class="r"><code>ALLgroups &lt;-rbind(ACM_demo,DCM_demo,HVOL_demo)
+
+#make sex 0/1 for easier analysis 
+ALLgroups$SEX[ALLgroups$SEX == &quot;M&quot;] &lt;- 1 
+ALLgroups$SEX[ALLgroups$SEX == &quot;F&quot;] &lt;- 0 
+ALLgroups$SEX[ALLgroups$SEX == 2] &lt;- 0 
+ALLgroups$SEX &lt;- as.numeric(ALLgroups$SEX)
+
+GroupTable1 &lt;- ALLgroups %&gt;%
+group_by(group) %&gt;%
+  summarise(
+    #total=n(),
+    #continuous Variables
+    AGE_AT_scan=continuousVariable_summary(AGE_AT_scan),
+    EF=continuousVariable_summary(EF),
+    DD=continuousVariable_summary(DD),
+    #binary Variables
+    SEX=binaryVariable_summary(SEX,n())
+    
+    ) 
+
+GroupTable2 &lt;- ALLgroups %&gt;%
+  group_by(group) %&gt;%
+  summarise(
+    AGE_AT_scan=sum(is.na(AGE_AT_scan)),
+    EF=sum(is.na(EF)),
+    DD=sum(is.na(DD)),
+    SEX=sum(is.na(SEX))
+    ) 
+
+GroupTable1&lt;-GroupTable1[,c(&quot;AGE_AT_scan&quot;,&quot;EF&quot;,&quot;DD&quot;,&quot;SEX&quot;)]
+GroupTable2&lt;-GroupTable2[,c(&quot;AGE_AT_scan&quot;,&quot;EF&quot;,&quot;DD&quot;,&quot;SEX&quot;)]
+
+GroupTable&lt;-rbind(GroupTable1,GroupTable2)
+GroupTable&lt;-t(GroupTable)
+
+colnames(GroupTable) &lt;- c(&quot;ACM[141]&quot;,&quot;DCM[366]&quot;,&quot;HVOL[445]&quot;,&quot;ACM[NA's]&quot;,&quot;DCM[NA's]&quot;,&quot;HVOL[NA's]&quot;)
+rownames(GroupTable) &lt;- c(&quot;Age&quot;, &quot;EF[MRI/ECHO]&quot;,&quot;DD/LVEDV&quot;,&quot;SEX(MALE)&quot;)
+#change order of columns
+#GroupTable&lt;-GroupTable[,c(&quot;TTNtv&quot;,&quot;GenotypeNegative&quot;,&quot;DCMVariants_nonTTN&quot;,&quot;TTNtv[NA's]&quot;,&quot;GenotypeNegative[NA's]&quot;,&quot;DCMVariants_nonTTN[NA's]&quot;,&quot;P-value[TTNtv vs GenotypeNegative]&quot;)]
+
+
+panderOptions('table.split.table', 800)
+pander(GroupTable)</code></pre>
+<table>
+<colgroup>
+<col width="19%"></col>
+<col width="14%"></col>
+<col width="15%"></col>
+<col width="15%"></col>
+<col width="12%"></col>
+<col width="12%"></col>
+<col width="12%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center"> </th>
+<th align="center">ACM[141]</th>
+<th align="center">DCM[366]</th>
+<th align="center">HVOL[445]</th>
+<th align="center">ACM[NA’s]</th>
+<th align="center">DCM[NA’s]</th>
+<th align="center">HVOL[NA’s]</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center"><strong>Age</strong></td>
+<td align="center">53.16 ± 10.05</td>
+<td align="center">56.03 ± 13.58</td>
+<td align="center">40.78 ± 13.52</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">3</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>EF[MRI/ECHO]</strong></td>
+<td align="center">26.51 ± 9.29</td>
+<td align="center">38.7 ± 12.75</td>
+<td align="center">66.11 ± 5.08</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">10</td>
+</tr>
+<tr class="odd">
+<td align="center"><strong>DD/LVEDV</strong></td>
+<td align="center">65.62 ± 9.08</td>
+<td align="center">257.71 ± 82.58</td>
+<td align="center">149.26 ± 32.63</td>
+<td align="center">5</td>
+<td align="center">0</td>
+<td align="center">10</td>
+</tr>
+<tr class="even">
+<td align="center"><strong>SEX(MALE)</strong></td>
+<td align="center">138 (97.9%)</td>
+<td align="center">255 (69.7%)</td>
+<td align="center">201 (45.2%)</td>
+<td align="center">0</td>
+<td align="center">0</td>
+<td align="center">0</td>
+</tr>
+</tbody>
+</table>
 </div>
 
 
