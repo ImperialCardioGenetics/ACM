@@ -1,0 +1,47 @@
+---
+title: "Alc_BRUdcms"
+author: "Upasana Tayal"
+date: "24 January 2017"
+output: html_document
+---
+```{r load_packages}
+library("ggplot2", lib.loc="~/Library/R/3.3/library")
+library("multcomp", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+library("dplyr", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+
+```
+
+```{r load_data, include=FALSE}
+bru_dcm_data <- read.csv("~/Documents/Documents/R/Projects/Alcohol/Github/Rawdata/bru_dcm_data.csv")
+FP <- read.csv("~/Documents/Documents/R/Projects/Alcohol/Github/Rawdata/FP.csv")
+```
+
+```{r regression}
+  #use optimised reg model for lvef
+model_ef <- lm(Dcm.Eflv ~Sex.x+TTNtvs+EtOHXS2+TTNtvs*EtOHXS2+ConfLGE+FHXDCM, data=data) 
+summary(model_ef) 
+confint(model_ef)
+
+  #get interaction terms estimates and confint
+names(coef(model_ef)) 
+mod.lh_ef<- glht(model_ef, linfct = c("TTNtvsTRUE + EtOHXS2TRUE+ TTNtvsTRUE:EtOHXS2TRUE = 0"))
+summary(mod.lh_ef)
+confint(mod.lh_ef)
+
+```
+
+```{r forest_plot}
+#save regression output in format of FP.csv file
+
+FP$x<-factor(FP$x, levels=rev(FP$x)) #how to keep order of forest plot
+
+p <- ggplot(FP, aes(x=FP$x, y=FP$y, ymin=FP$ylo, ymax=FP$yhi))+geom_pointrange()+  geom_point(size=5, shape=18)+ coord_flip()+ylab("Baseline LVEF (%)") +xlab("")
+
+p<- p+ theme(axis.text.y = element_text(angle = 0, hjust = 1, size=15,color="darkred"))
+p<- p+ theme(axis.text.x = element_text(angle = 0, hjust = 1, size=15,color="black"))
+p<- p+ theme(axis.title.x = element_text(angle = 0, hjust = 1, size=15,color="black"))
+p<-p+geom_hline(yintercept=0, lty=2) 
+p
+
+```
+
