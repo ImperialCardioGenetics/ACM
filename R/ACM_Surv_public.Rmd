@@ -1,0 +1,108 @@
+---
+title: "ACM_Surv_public"
+author: "Upasana Tayal"
+date: "24 January 2017"
+output: html_document
+---
+
+```{r load packages, include=FALSE}
+install.packages('survminer')
+source("https://bioconductor.org/biocLite.R")
+biocLite("RTCGA.clinical")
+```
+
+```{r library}
+library(survival)
+library(survminer)
+library("dplyr", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+library("reshape", lib.loc="~/Library/R/3.1/library")
+library(tidyr)
+library(ReporteRs)
+library(magrittr)
+
+```
+
+```{r load_data}
+Alc_survival <- read.csv("~/Documents/Documents/R/Projects/Survival_Analysis/Raw_data_SA/Alcohol/Alc_survival.csv")
+
+```
+
+```{r summarise_events}
+table1<- t(xtabs(~EVENT+GENETIC_STATUS, data=Alc_survival))
+
+```
+
+
+```{r survival_curve}
+fit <- survfit(Surv(TIME, EVENT) ~ GENETIC_STATUS,
+               data = Alc_survival)
+
+ggsurvplot(
+   fit,                    
+   risk.table = TRUE,      
+   pval = TRUE,             
+   conf.int = TRUE,        
+   xlim = c(0,10000),        
+                           
+   break.time.by = 1000,    
+ risk.table.y.text.col = T, 
+  risk.table.y.text = FALSE,
+ xlab="Days")
+```
+
+```{r subset_ttn}
+ACM2 <-Alc_survival %>%
+    filter(GENETIC_STATUS=="TTNtv" | GENETIC_STATUS=="GenotypeNegative")
+
+fit <- survfit(Surv(TIME, EVENT) ~ GENETIC_STATUS,
+               data = ACM2)
+
+ggsurvplot(fit, risk.table = TRUE, pval = TRUE,  conf.int = TRUE, xlim = c(0,12000),  break.time.by = 1000, risk.table.y.text.col = T,risk.table.y.text = FALSE, ggtheme = theme_RTCGA(), xlab="Days" )
+```
+
+```{r log_rank}
+#Log Rank
+survdiff(Surv(TIME, EVENT) ~ GENETIC_STATUS,data=Alc_survival)
+survdiff(Surv(TIME, EVENT) ~ GENETIC_STATUS,data=ACM2)
+
+
+#COX PH MODEL
+Alc.cox1<-coxph(Surv(TIME, EVENT) ~ GENETIC_STATUS,data=Alc_survival)
+summary(Alc.cox1)
+print(test.Alc.cox1 <- cox.zph(Alc.cox1, transform=rank)) 
+exp(Alc.cox1$coefficients)
+exp(confint(Alc.cox1)) 
+
+```
+
+```{r cox_ph_otherVars}
+
+Alc.cox1<-coxph(Surv(TIME, EVENT) ~ factor(SEX),data=Alc_survival)
+summary(Alc.cox1) #only 3 females
+print(test.Alc.cox1 <- cox.zph(Alc.cox1, transform=rank)) #test if proportional hazard assumption met
+
+Alc.cox1<-coxph(Surv(TIME, EVENT) ~ AGE_AT_INITIAL_CLINICAL_ASSESSMENT,data=Alc_survival)
+summary(Alc.cox1)
+print(test.Alc.cox1 <- cox.zph(Alc.cox1, transform=rank)) #test if proportional hazard assumption met
+
+Alc.cox1<-coxph(Surv(TIME, EVENT) ~ INITIAL_EJECTION_FRACTION,data=Alc_survival)
+summary(Alc.cox1)
+print(test.Alc.cox1 <- cox.zph(Alc.cox1, transform=rank)) #test if proportional hazard assumption met
+
+Alc.cox1<-coxph(Surv(TIME, EVENT) ~ GENETIC_STATUS+SEX+AGE_AT_INITIAL_CLINICAL_ASSESSMENT+INITIAL_EJECTION_FRACTION,data=Alc_survival)
+summary(Alc.cox1)
+print(test.Alc.cox1 <- cox.zph(Alc.cox1, transform=rank)) #test if proportional hazard assumption met
+
+Alc.cox1<-coxph(Surv(TIME, EVENT) ~ FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH,data=Alc_survival)
+summary(Alc.cox1)
+print(test.Alc.cox1 <- cox.zph(Alc.cox1, transform=rank)) #test if proportional hazard assumption met
+
+Alc.cox1<-coxph(Surv(TIME, EVENT) ~ GENETIC_STATUS+SEX+AGE_AT_INITIAL_CLINICAL_ASSESSMENT+INITIAL_EJECTION_FRACTION,data=Alc_survival)
+summary(Alc.cox1)
+print(test.Alc.cox1 <- cox.zph(Alc.cox1, transform=rank)) #test if proportional hazard assumption met
+
+Alc.cox1<-coxph(Surv(TIME, EVENT) ~ GENETIC_STATUS+strata(DIASTOLIC_DIAMETER)+AGE_AT_INITIAL_CLINICAL_ASSESSMENT+INITIAL_EJECTION_FRACTION,data=ACM2) #for ACM2
+
+
+#nb - adjusted model not created for either dataset as no variables sig on univariable analysis
+```
