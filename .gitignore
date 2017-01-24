@@ -2,3 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
+ACM.Rproj
+HVOL_pheno_raw.csv
+DCM_pheno_raw.csv
+*.html
