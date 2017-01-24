@@ -19,7 +19,7 @@ ACM <- read.csv("../DATOS_copy.csv", header=T, sep=',') %>%
 ```
 
 ##An example of a data summary table
-```{r summarise acm phenotype by genotype}
+```{r summarise acm phenotype by genotype, results='asis'}
 ACM %>%
   #exclude samples with other_dcm_mutations, unless they are TTN pos
   filter(OTHER_DCM_MUTATIONS==0 | TTN_MUTATIONS==1) %>% #currently there are 24 with "other DCM", so lots being discarded
@@ -29,7 +29,8 @@ group_by(TTN_MUTATIONS) %>%
     ageAtSymptoms = mean(AGE_AT_ONSET_OF_SYMPTOMS,na.rm=T)
     ) %>%
   t %>% #transposes if you like that way...
-  pander
+  data.frame %>%
+pander
 ```
 
 I had to do `na.rm=T` here, because there was some missing data. Need to check if this appropriate.
@@ -41,13 +42,14 @@ ACM %>%
   with(.,t.test(INITIAL_EJECTION_FRACTION ~ TTN_MUTATIONS))
 ```
 
-```{r}
+```{r, results='asis'}
 ACM %>%
   filter(OTHER_DCM_MUTATIONS==0 | TTN_MUTATIONS==1) %>%
   summarise(
     lvef_pValue=with(.,t.test(INITIAL_EJECTION_FRACTION ~ TTN_MUTATIONS)$p.val),
     age_pValue=with(.,t.test(AGE_AT_ONSET_OF_SYMPTOMS ~ TTN_MUTATIONS)$p.val)
-  )
+  ) %>%
+  pander()
   
 ```
 

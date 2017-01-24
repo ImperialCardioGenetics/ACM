@@ -11,7 +11,7 @@
 
 <meta name="author" content="james ware" />
 
-<meta name="date" content="2017-01-05" />
+<meta name="date" content="2017-01-24" />
 
 <title>genoPheno</title>
 
@@ -118,7 +118,7 @@ $(document).ready(function () {
 
 <h1 class="title toc-ignore">genoPheno</h1>
 <h4 class="author"><em>james ware</em></h4>
-<h4 class="date"><em>2017-01-05</em></h4>
+<h4 class="date"><em>2017-01-24</em></h4>
 
 </div>
 
@@ -138,13 +138,21 @@ group_by(TTN_MUTATIONS) %&gt;%
     ageAtSymptoms = mean(AGE_AT_ONSET_OF_SYMPTOMS,na.rm=T)
     ) %&gt;%
   t %&gt;% #transposes if you like that way...
-  pander</code></pre>
+  data.frame %&gt;%
+pander</code></pre>
 <table style="width:44%;">
 <colgroup>
 <col width="27%"></col>
 <col width="8%"></col>
 <col width="8%"></col>
 </colgroup>
+<thead>
+<tr class="header">
+<th align="center"> </th>
+<th align="center">X1</th>
+<th align="center">X2</th>
+</tr>
+</thead>
 <tbody>
 <tr class="odd">
 <td align="center"><strong>TTN_MUTATIONS</strong></td>
@@ -181,6 +189,31 @@ group_by(TTN_MUTATIONS) %&gt;%
 ## sample estimates:
 ## mean in group 0 mean in group 1 
 ##        26.24712        25.07143</code></pre>
+<pre class="r"><code>ACM %&gt;%
+  filter(OTHER_DCM_MUTATIONS==0 | TTN_MUTATIONS==1) %&gt;%
+  summarise(
+    lvef_pValue=with(.,t.test(INITIAL_EJECTION_FRACTION ~ TTN_MUTATIONS)$p.val),
+    age_pValue=with(.,t.test(AGE_AT_ONSET_OF_SYMPTOMS ~ TTN_MUTATIONS)$p.val)
+  ) %&gt;%
+  pander()</code></pre>
+<table style="width:39%;">
+<colgroup>
+<col width="19%"></col>
+<col width="19%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="center">lvef_pValue</th>
+<th align="center">age_pValue</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">0.7002556</td>
+<td align="center">0.1655014</td>
+</tr>
+</tbody>
+</table>
 <p>Actually - looking at the output of the t.test, you could just get the means of the two group from there. Or use the summary method above.</p>
 </div>
 
