@@ -1,12 +1,12 @@
 ---
-title: "genoPheno"
+title: "Tables"
 author: "james ware & risha govind"
 date: "`r Sys.Date()`"
-output: word_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning=FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, size="smallsize")
 library(lazyeval)
 library(dplyr)
 library(pander)
@@ -238,7 +238,7 @@ MainTable3 <- ACM %>%
   )
 ```
 
-## Table 1
+## Table 1 - Within ACM Cohort
 
 ```{r Combine all above :Table 1}
 #To DO
@@ -254,7 +254,7 @@ MainTable<-t(MainTable)
 #change order of columns
 Table1<-MainTable[,c("3","2","1","7")]
 
-colnames(Table1) <- c("TTNtv<br>(n=14)","Genotype Neg<br>(n=122)","Other Variants<br>(n=5)","P-value<br>(TTNtv vs Genotype Neg)")
+colnames(Table1) <- c("TTNtv<br> (n=14)","Genotype Neg <br> (n=122)","Other Variants <br> (n=5)","P-value <br> (TTNtv vs Genotype Neg)")
 
 rownames(Table1) <- c("Alcohol (grams)","Age at initial clinical assesement","Initial ejection fraction" ,"Diastolic diameter","Sex (males)","Atrial fibrillation","Family history of CM","Family history of SCD")
 
@@ -264,11 +264,11 @@ pander(Table1)
 
 ```
 
-## Table 1 - for internal use. Includes missing data count
+## Table for internal use - missing data info for Table 1
 ```{r}
-Table1_extra<-MainTable[,c("3","2","1","6","5","4","7")]
+Table1_extra<-MainTable[,c("6","5","4")]
 
-colnames(Table1_extra) <- c("TTNtv <br>(n=14)","Genotype Neg <br>(n=122)","Other Variants <br>(n=5)","TTNtv <br>(NA's)","Genotype Neg <br>(NA's)","Other Variants <br>(NA's)","P-value <br>(TTNtv vs Genotype Neg)")
+colnames(Table1_extra) <- c("TTNtv <br> (NA's)","Genotype Neg <br> (NA's)","Other Variants <br> (NA's)")
 
 rownames(Table1_extra) <- c("Alcohol (grams)","Age at initial clinical assesement","Initial ejection fraction" ,"Diastolic diameter","Sex (males)","Atrial fibrillation","Family history of CM","Family history of SCD")
 
@@ -277,7 +277,7 @@ pander(Table1_extra)
 
 ```
 
-## Supplementary Table 1
+## Supplementary Table 1 
 ```{r Supplementary Table 1}
 
 #To Do
@@ -369,7 +369,7 @@ SuppTable<-t(SuppTable)
 
 SuppTable<-SuppTable[,c("3","2","1","6","5","4","7")]
 
-colnames(SuppTable) <- c("TTNtv <br>(n=14)","Genotype Neg <br>(n=122)","Other Variants <br>(n=5)","TTNtv <br>(NA's)","Genotype Neg <br>(NA's)","Other Variants <br>(NA's)","P-value <br>(TTNtv vs Genotype Neg)")
+colnames(SuppTable) <- c("TTNtv <br> (n=14)","Genotype Neg <br> (n=122)","Other Variants <br> (n=5)","TTNtv <br> (NA's)","Genotype Neg <br> (NA's)","Other Variants <br>(NA's)","P-value <br> (TTNtv vs Genotype Neg)")
 
 #Make row names to lower case and remove underscore 
 SuppTable_rowNames = rownames(SuppTable)
@@ -503,7 +503,7 @@ GroupTable2<-GroupTable2[,c("AGE_AT_scan","EF","DD","SEX","Ethnicity")]
 GroupTable<-rbind(GroupTable1,GroupTable2)
 GroupTable<-t(GroupTable)
 
-colnames(GroupTable) <- c("ACM <br>(n=141)","DCM <br>(n=366)","HVOL <br>(n=445)","ACM <br>(NA's)","DCM <br>(NA's)","HVOL <br>(NA's)")
+colnames(GroupTable) <- c("ACM <br> (n=141)","DCM <br> (n=366)","HVOL <br> (n=445)","ACM <br> (NA's)","DCM <br> (NA's)","HVOL <br> (NA's)")
 rownames(GroupTable) <- c("Age at scan", "EF[MRI/ECHO]","DD/LVEDV","Sex (male)","Ethnicity (caucasian)")
 
 
@@ -513,6 +513,57 @@ panderOptions('table.split.table', 800)
 pander(GroupTable)
 
 
+```
+
+
+
+## Table 3 
+```{r ACM - recovery stable severe}
+
+ACM_recov_temp <- ACM[,c("BRUID","VarGroup","DEATH","TRANSPLANT","EJECTION_FRACTION_RECOVERY")]
+
+ACM_recov <-cbind(ACM_recov_temp,Death_or_Transplant=0,LVEF_recovery=0,No_LVEF_Recovery=0)
+
+ACM_recov$Death_or_Transplant[ACM_recov$DEATH=="1"] <- 1
+ACM_recov$Death_or_Transplant[ACM_recov$TRANSPLANT=="1"] <- 1
+
+ACM_recov$LVEF_recovery[ACM_recov$EJECTION_FRACTION_RECOVERY==1] <- 1
+ACM_recov$LVEF_recovery[is.na(ACM_recov$EJECTION_FRACTION_RECOVERY)] <- NA
+ACM_recov$LVEF_recovery[ACM_recov$Death_or_Transplant==1] <- 0
+
+ACM_recov$No_LVEF_Recovery[ACM_recov$EJECTION_FRACTION_RECOVERY==0] <- 1
+ACM_recov$No_LVEF_Recovery[is.na(ACM_recov$EJECTION_FRACTION_RECOVERY)] <- NA
+ACM_recov$No_LVEF_Recovery[ACM_recov$Death_or_Transplant==1] <- 0
+
+
+RecoveryTable <- ACM_recov %>%
+group_by(VarGroup) %>%
+  summarise(
+    #binary Variables
+    Death_or_Transplant=binaryVariable_summary(Death_or_Transplant,n()),
+    LVEF_recovery=binaryVariable_summary(LVEF_recovery,n()),    
+    No_LVEF_Recovery=binaryVariable_summary(No_LVEF_Recovery,n())
+    ) 
+
+
+RecoveryTable<-RecoveryTable[,c("Death_or_Transplant","LVEF_recovery","No_LVEF_Recovery")]
+
+RecoveryTable<- t(RecoveryTable)
+
+colnames(RecoveryTable) <- c("Other Variants <br> (n=5)","Genotype Neg <br> (n=122)","TTNtv <br> (n=14)")
+RecoveryTable<-RecoveryTable[,c("TTNtv <br> (n=14)","Genotype Neg <br> (n=122)","Other Variants <br> (n=5)")]
+
+
+#Make row names to lower case and remove underscore 
+RecoveryTable_rowNames = rownames(RecoveryTable)
+#replace all spaces and dots with underscore
+RecoveryTable_rowNames<- gsub(x = RecoveryTable_rowNames,pattern = "_", replacement = " ",fixed = TRUE)
+rownames(RecoveryTable)<-RecoveryTable_rowNames
+
+
+
+panderOptions('table.split.table', 800)
+pander(RecoveryTable)
 
 ```
 
