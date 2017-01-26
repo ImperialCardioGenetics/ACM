@@ -1,8 +1,8 @@
 ---
 title: "Tables"
-author: "james ware & risha govind"
+author: "Risha Govind"
 date: "`r Sys.Date()`"
-output: html_document
+output: word_document
 ---
 
 ```{r setup, include=FALSE}
@@ -448,12 +448,21 @@ colnames(ACM_survival) <- c("BRUID","TIME","EVENT", "GENETIC_STATUS","Gr_alcohol
 DCM_demo <- read.table("../DCM_pheno.txt", header=T, sep='\t')
 HVOL_demo <- read.table("../HVOL_pheno.txt", header=T, sep='\t')
 
-DCM_demo <- DCM_demo[,c("group", "SEX","AGE_AT_scan","EF","DD","Ethnicity")]
-HVOL_demo <- HVOL_demo[,c("group", "SEX","AGE_AT_scan","EF","DD","Ethnicity")]
+#Add missing  columns to the tables 
+DCM_demo <-cbind(DCM_demo, EF_echo=NA, DD_echo=NA)
+HVOL_demo <-cbind(HVOL_demo, EF_echo=NA, DD_echo=NA)
+ACM_demo <-cbind(group = 'ACM', ACM, Ethnicity ='C', EF_MRI=NA, DD_MRI=NA)
 
-ACM_demo <- ACM[,c("SEX","AGE_AT_INITIAL_CLINICAL_ASSESSMENT","INITIAL_EJECTION_FRACTION","DIASTOLIC_DIAMETER")]
-ACM_demo <-cbind(group = 'ACM', ACM_demo, Ethnicity ='C')
-colnames(ACM_demo) <- c("group", "SEX","AGE_AT_scan","EF","DD","Ethnicity")
+
+# recreate tables in correct order or columns 
+DCM_demo <- DCM_demo[,c("group", "SEX","AGE_AT_scan","EF_echo","DD_echo","EF","DD","Ethnicity")]
+HVOL_demo <- HVOL_demo[,c("group", "SEX","AGE_AT_scan","EF_echo","DD_echo","EF","DD","Ethnicity")]
+ACM_demo <- ACM_demo[,c("group","SEX","AGE_AT_INITIAL_CLINICAL_ASSESSMENT","INITIAL_EJECTION_FRACTION","DIASTOLIC_DIAMETER","EF_MRI","DD_MRI","Ethnicity")]
+
+#give uniform column names 
+colnames(DCM_demo) <- c("group", "SEX","AGE_AT_scan","EF_echo","DD_echo","EF_MRI","DD_MRI","Ethnicity")
+colnames(HVOL_demo)<- c("group", "SEX","AGE_AT_scan","EF_echo","DD_echo","EF_MRI","DD_MRI","Ethnicity")
+colnames(ACM_demo) <- c("group", "SEX","AGE_AT_scan","EF_echo","DD_echo","EF_MRI","DD_MRI","Ethnicity")
 
 #dim(DCM_demo)
 #dim(HVOL_demo)
@@ -479,8 +488,10 @@ group_by(group) %>%
     #total=n(),
     #continuous Variables
     AGE_AT_scan=continuousVariable_summary(AGE_AT_scan),
-    EF=continuousVariable_summary(EF),
-    DD=continuousVariable_summary(DD),
+    EF_echo=continuousVariable_summary(EF_echo),
+    DD_echo=continuousVariable_summary(DD_echo),
+    EF_MRI=continuousVariable_summary(EF_MRI),
+    DD_MRI=continuousVariable_summary(DD_MRI),    
     #binary Variables
     SEX=binaryVariable_summary(SEX,n()),
     Ethnicity=binaryVariable_summary(Ethnicity,n())
@@ -491,20 +502,29 @@ GroupTable2 <- ALLgroups %>%
   group_by(group) %>%
   summarise(
 	AGE_AT_scan=sum(is.na(AGE_AT_scan)),
-	EF=sum(is.na(EF)),
-	DD=sum(is.na(DD)),
+	EF_echo=sum(is.na(EF_echo)),
+	DD_echo=sum(is.na(DD_echo)),
+	EF_MRI=sum(is.na(EF_MRI)),
+	DD_MRI=sum(is.na(DD_MRI)),	
 	SEX=sum(is.na(SEX)),
 	Ethnicity=sum(is.na(Ethnicity))
     ) 
 
-GroupTable1<-GroupTable1[,c("AGE_AT_scan","EF","DD","SEX","Ethnicity")]
-GroupTable2<-GroupTable2[,c("AGE_AT_scan","EF","DD","SEX","Ethnicity")]
+GroupTable1<-GroupTable1[,c("AGE_AT_scan","EF_echo","DD_echo","EF_MRI","DD_MRI","SEX","Ethnicity")]
+GroupTable2<-GroupTable2[,c("AGE_AT_scan","EF_echo","DD_echo","EF_MRI","DD_MRI","SEX","Ethnicity")]
 
 GroupTable<-rbind(GroupTable1,GroupTable2)
+
+#remove statistics based on empty columns 
+GroupTable$EF_echo[GroupTable$EF_echo == "NaN ± NA" | GroupTable$EF_echo == "141" | GroupTable$EF_echo == "366" | GroupTable$EF_echo == "445"] <- "-"
+GroupTable$DD_echo[GroupTable$DD_echo == "NaN ± NA" | GroupTable$DD_echo == "141" | GroupTable$DD_echo == "366" | GroupTable$DD_echo == "445"] <- "-"
+GroupTable$EF_MRI[GroupTable$EF_MRI == "NaN ± NA" | GroupTable$EF_MRI == "141" | GroupTable$EF_MRI == "366" | GroupTable$EF_MRI == "445"] <- "-"
+GroupTable$DD_MRI[GroupTable$DD_MRI == "NaN ± NA" | GroupTable$DD_MRI == "141" | GroupTable$DD_MRI == "366" | GroupTable$DD_MRI == "445"] <- "-"
+
 GroupTable<-t(GroupTable)
 
 colnames(GroupTable) <- c("ACM <br> (n=141)","DCM <br> (n=366)","HVOL <br> (n=445)","ACM <br> (NA's)","DCM <br> (NA's)","HVOL <br> (NA's)")
-rownames(GroupTable) <- c("Age at scan", "EF[MRI/ECHO]","DD/LVEDV","Sex (male)","Ethnicity (caucasian)")
+rownames(GroupTable) <- c("Age at scan", "Left ventricular ejection fraction (echo)","Left ventricular end diastolic diameter (echo)", "Left ventricular ejection fraction (MRI)","Left ventricular end diastolic volume (MRI)","Sex (male)","Ethnicity (caucasian)")
 
 
 
