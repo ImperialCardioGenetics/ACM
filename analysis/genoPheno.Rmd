@@ -2,7 +2,7 @@
 title: "Tables"
 author: "Risha Govind"
 date: "`r Sys.Date()`"
-output: word_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -20,22 +20,22 @@ require(gdata)
 ## Load datasets
 
 #BRUID to Spanish IDS [From Rachel]
-BRUID_localID <- read.csv("../BRUID_localID.csv", header=T, sep=',') %>%
+BRUID_localID <- read.csv("../input-files/BRUID_localID.csv", header=T, sep=',') %>%
   tbl_df
 
 #List of Samples from ACM TTNtv Group [From Liz]
-ACM_TTNtv_Group <- read.table("../ACM_TTNtv_group.txt", header=T) %>%
+ACM_TTNtv_Group <- read.table("../input-files/ACM_TTNtv_group.txt", header=T) %>%
   tbl_df
 
 #List of Samples from ACM DCM_var_nonTTN Group [From Liz]
-ACM_DCM_var_nonTTN_Group <- read.table("../ACM_DCM_var_nonTTN_group.txt", header=T) %>%
+ACM_DCM_var_nonTTN_Group <- read.table("../input-files/ACM_DCM_var_nonTTN_group.txt", header=T) %>%
   tbl_df
 
 #Clinical Phenotype of ACM Samples [From Spanish Team]
-ACM_pheno = read.xls("../ACM_pheno.xlsx", sheet=1, header=T, fileEncoding="latin1") 
+ACM_pheno = read.xls("../input-files/ACM_pheno.xlsx", sheet=1, header=T, fileEncoding="latin1") 
 
 #English translations of headers of ACM_pheno file [From Spanish Team]
-ACM_english_headers = read.csv ("../ACM_ColumnNames_English.csv", header = FALSE, sep=',', fileEncoding="latin1")
+ACM_english_headers = read.csv ("../input-files/ACM_ColumnNames_English.csv", header = FALSE, sep=',', fileEncoding="latin1")
 
 #dim(ACM_pheno)
 ```
@@ -445,8 +445,8 @@ colnames(ACM_survival) <- c("BRUID","TIME","EVENT", "GENETIC_STATUS","Gr_alcohol
 # ? how to add ethnicity to table
 
 
-DCM_demo <- read.table("../DCM_pheno.txt", header=T, sep='\t')
-HVOL_demo <- read.table("../HVOL_pheno.txt", header=T, sep='\t')
+DCM_demo <- read.table("../input-files/DCM_pheno.txt", header=T, sep='\t')
+HVOL_demo <- read.table("../input-files/HVOL_pheno.txt", header=T, sep='\t')
 
 #Add missing  columns to the tables 
 DCM_demo <-cbind(DCM_demo, EF_echo=NA, DD_echo=NA)

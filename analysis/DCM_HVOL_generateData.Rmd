@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r Load Data}
 DCM_raw <- read.csv("../../data-raw/DCM_pheno_raw.csv", header=T, sep=',')
 HVOL_raw <- read.csv("../../data-raw/HVOL_pheno_raw.csv", header=T, sep=',')
-postPCA_FinalDataset<- read.table("../Filtered_SampleIDs.txt", header=T, sep='\t')
+postPCA_FinalDataset<- read.table("../input-files/Filtered_SampleIDs.txt", header=T, sep='\t')
 
 dim(DCM_raw)
 dim(HVOL_raw)
@@ -63,8 +63,8 @@ dim(HVOL)
 ```{r }
 
 #write table
-  write.table(DCM, quote=FALSE, sep ="\t", row.names = F, file="../DCM_pheno.txt") 
-  write.table(HVOL, quote=FALSE, sep ="\t", row.names = F, file="../HVOL_pheno.txt") 
+  write.table(DCM, quote=FALSE, sep ="\t", row.names = F, file="../input-files/DCM_pheno.txt") 
+  write.table(HVOL, quote=FALSE, sep ="\t", row.names = F, file="../input-files/HVOL_pheno.txt") 
 
 ```
 
