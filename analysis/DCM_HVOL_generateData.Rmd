@@ -10,8 +10,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r Load Data}
-DCM_raw <- read.csv("../DCM_pheno_raw.csv", header=T, sep=',')
-HVOL_raw <- read.csv("../HVOL_pheno_raw.csv", header=T, sep=',')
+DCM_raw <- read.csv("../../data-raw/DCM_pheno_raw.csv", header=T, sep=',')
+HVOL_raw <- read.csv("../../data-raw/HVOL_pheno_raw.csv", header=T, sep=',')
 postPCA_FinalDataset<- read.table("../Filtered_SampleIDs.txt", header=T, sep='\t')
 
 dim(DCM_raw)
