@@ -5,20 +5,32 @@ date: "24 January 2017"
 output: html_document
 ---
 
-```{r load packages, include=FALSE}
-install.packages('survminer')
+```{r installPackages}
+for(nextPackage in c("survminer","survival","dplyr","reshape","tidyr","ReporteRs")){
+if(!nextPackage %in% installed.packages()){
+  install.packages(nextPackage)
+}
+}
+```
+
+```{r loadBiocLite, include=FALSE}
 source("https://bioconductor.org/biocLite.R")
 biocLite("RTCGA.clinical")
 ```
 
-```{r library}
+```{r loadLibraries}
 library(survival)
 library(survminer)
-library("dplyr", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
-library("reshape", lib.loc="~/Library/R/3.1/library")
+#library("dplyr", lib.loc="/Library/Frameworks/R.framework/Versions/3.3/Resources/library")
+# Paz - have commented these in case others are using different library locations
+library(dplyr)
+#library("reshape", lib.loc="~/Library/R/3.1/library") 
+# Paz - there is reshape2, but actually increasingly seems to be incorporated into tidyr and dplyr
+library(reshape)
 library(tidyr)
 library(ReporteRs)
-library(magrittr)
+#library(magrittr) # Paz - don't think you need to call this.  dplyr will load pipes.
+# I'm not sure all of these libraries are needed?
 
 ```
 
