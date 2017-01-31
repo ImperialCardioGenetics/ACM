@@ -2,7 +2,10 @@
 title: "Tables"
 author: "Risha Govind"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  # html_document
+  word_document:
+    reference_docx: ./template.docx
 ---
 
 ```{r setup, include=FALSE}
