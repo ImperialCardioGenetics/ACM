@@ -1,0 +1,130 @@
+---
+title: "VariantList"
+author: "risha govind"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, size="smallsize")
+library(lazyeval)
+library(dplyr)
+library(pander)
+library(gdata)
+require(gdata)
+
+```
+
+
+```{r load data}
+## Load datasets
+
+#Variants Data
+Variants <- read.table("../input-files/Variants_filteredbyGeneVarType_allGroups_allfreq.txt", header=T) 
+
+
+#Sample IDs & cohorts
+SampleIDs <- read.table("../input-files/Filtered_SampleIDs.txt", header=T) 
+
+
+
+```
+
+```{r Get RareVar}
+
+RareVar=Variants[which(Variants$af_filter<Variants$DCM_max_allele_freq),]
+
+dim(RareVar)
+
+write.table(RareVar, quote=FALSE, sep ="\t", row.names = F, file="../intermediate-files/Variants_filteredbyGeneVarType_allGroups_Rare.txt") 
+
+```
+
+#10VC02667 = -7+1 = two frameshifts that cancel each other out.  not TTNtv
+#20PC04885 has a TTNtv and a LMNA SNP. 
+#10BK01803 has a TTNtv and a BAG3 SNP. 
+#Check there are no LMNAs in ACM please 
+
+
+```{r Label VarType against SampleIDs}
+
+RareVar$Gene_VarGroup <- paste(RareVar$GENE, RareVar$VarGroup, sep="_")
+
+RareVar<-RareVar[,c("SampleID","Gene_VarGroup")]
+
+RareVar <- aggregate(Gene_VarGroup ~ SampleID, data = RareVar, paste, collapse = ",")
+
+#Merge Tables
+AllSamples<-merge(RareVar, SampleIDs, by.x = "SampleID", by.y = "IID", all = TRUE) 
+
+
+AllSamples[grep("BAG3_non_TV", AllSamples$Gene_VarGroup), "BAG3_non_TV"] <- 1
+AllSamples[grep("BAG3_TV", AllSamples$Gene_VarGroup), "BAG3_TV"] <- 1
+AllSamples[grep("DSP_TV", AllSamples$Gene_VarGroup), "DSP_TV"] <- 1
+AllSamples[grep("LMNA_non_TV", AllSamples$Gene_VarGroup), "LMNA_non_TV"] <- 1
+AllSamples[grep("LMNA_TV", AllSamples$Gene_VarGroup), "LMNA_TV"] <- 1
+AllSamples[grep("MYH7_non_TV", AllSamples$Gene_VarGroup), "MYH7_non_TV"] <- 1
+AllSamples[grep("SCN5A_TV", AllSamples$Gene_VarGroup), "SCN5A_TV"] <- 1
+AllSamples[grep("TCAP_non_TV", AllSamples$Gene_VarGroup), "TCAP_non_TV"] <- 1
+AllSamples[grep("TNNT2_non_TV", AllSamples$Gene_VarGroup), "TNNT2_non_TV"] <- 1
+AllSamples[grep("TPM1_non_TV", AllSamples$Gene_VarGroup), "TPM1_non_TV"] <- 1
+AllSamples[grep("TPM1_TV", AllSamples$Gene_VarGroup), "TPM1_TV"] <- 1
+AllSamples[grep("TTN_TV", AllSamples$Gene_VarGroup), "TTN_TV"] <- 1
+
+
+#Manually Change One DCM annotation
+AllSamples <- within(AllSamples, TTN_TV[SampleID == '10VC02667'] <- NA)
+
+
+```
+
+#Frequencies and Burden Testing 
+```{r burden test}
+
+AllSamples[is.na(AllSamples)] <- 0
+
+binaryVariable_summary <- function(e,f){
+  b<-paste(round(sum(e,na.rm=T))," \u0028",round(((sum(e,na.rm=T)/f) * 100), digits=1),"\u0025\u0029", sep="")
+return(b)
+}
+
+Counts_Frequencies <- AllSamples %>%
+group_by(group) %>%
+  summarise(
+    #total=n(),
+    #binary Variables
+  BAG3_non_TV=binaryVariable_summary(BAG3_non_TV,n()),
+  BAG3_TV=binaryVariable_summary(BAG3_TV,n()),
+  DSP_TV=binaryVariable_summary(DSP_TV,n()),
+  LMNA_non_TV=binaryVariable_summary(LMNA_non_TV,n()),
+  LMNA_TV=binaryVariable_summary(LMNA_TV,n()),
+  MYH7_non_TV=binaryVariable_summary(MYH7_non_TV,n()),
+  SCN5A_TV=binaryVariable_summary(SCN5A_TV,n()),
+  TCAP_non_TV=binaryVariable_summary(TCAP_non_TV,n()),
+  TNNT2_non_TV=binaryVariable_summary(TNNT2_non_TV,n()),
+  TPM1_non_TV=binaryVariable_summary(TPM1_non_TV,n()),
+  TPM1_TV=binaryVariable_summary(TPM1_TV,n()),
+  TTN_TV=binaryVariable_summary(TTN_TV,n())
+    ) 
+
+Counts_Frequencies %>% tbl_df %>% print(n=40)
+
+
+#ACM & HVOL have ZERO DSP_TV, LMNA_TV, TCAP_non_TV, TNNT2_non_TV . So removed
+BurdenTest <- AllSamples %>%
+  filter(group=="ACM" | group=="HVOL") %>%
+  summarise(
+BAG3_non_TV=with(., signif(digits=4,fisher.test(x=BAG3_non_TV,y=group)$p.val)),
+BAG3_TV=with(., signif(digits=4,fisher.test(x=BAG3_TV,y=group)$p.val)),
+LMNA_non_TV=with(., signif(digits=4,fisher.test(x=LMNA_non_TV,y=group)$p.val)),
+MYH7_non_TV=with(., signif(digits=4,fisher.test(x=MYH7_non_TV,y=group)$p.val)),
+SCN5A_TV=with(., signif(digits=4,fisher.test(x=SCN5A_TV,y=group)$p.val)),
+TPM1_non_TV=with(., signif(digits=4,fisher.test(x=TPM1_non_TV,y=group)$p.val)),
+TPM1_TV=with(., signif(digits=4,fisher.test(x=TPM1_TV,y=group)$p.val)),
+TTN_TV=with(., signif(digits=4,fisher.test(x=TTN_TV,y=group)$p.val))
+
+      )
+
+BurdenTest  
+
+```
