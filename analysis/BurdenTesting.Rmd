@@ -1,5 +1,5 @@
 ---
-title: "VariantList"
+title: "Burden Test"
 author: "risha govind"
 date: "`r Sys.Date()`"
 output: word_document
@@ -19,8 +19,8 @@ require(gdata)
 ```{r load data}
 ## Load datasets
 
-#Variants Data
-Variants <- read.table("../input-files/Variants_filteredbyGeneVarType_allGroups_allfreq.txt", header=T) 
+#Rare Variants Data
+RareVar <- read.table("../input-files/Filtered_Rare_Variants.txt", header=T) 
 
 
 #Sample IDs & cohorts
@@ -30,17 +30,7 @@ SampleIDs <- read.table("../input-files/Filtered_SampleIDs.txt", header=T)
 
 ```
 
-```{r Get RareVar}
-
-RareVar=Variants[which(Variants$af_filter<Variants$DCM_max_allele_freq),]
-
-dim(RareVar)
-
-write.table(RareVar, quote=FALSE, sep ="\t", row.names = F, file="../intermediate-files/Variants_filteredbyGeneVarType_allGroups_Rare.txt") 
-
-```
-
-#10VC02667 = -7+1 = two frameshifts that cancel each other out.  not TTNtv
+#10VC02667 = -7+1 = two frameshifts that cancel each other out.  ie not TTNtv
 #20PC04885 has a TTNtv and a LMNA SNP. 
 #10BK01803 has a TTNtv and a BAG3 SNP. 
 #Check there are no LMNAs in ACM please 
@@ -107,24 +97,38 @@ group_by(group) %>%
   TTN_TV=binaryVariable_summary(TTN_TV,n())
     ) 
 
-Counts_Frequencies %>% tbl_df %>% print(n=40)
 
 
-#ACM & HVOL have ZERO DSP_TV, LMNA_TV, TCAP_non_TV, TNNT2_non_TV . So removed
+#ACM & HVOL have ZERO DSP_TV, LMNA_TV, TCAP_non_TV, TNNT2_non_TV . So NA
 BurdenTest <- AllSamples %>%
   filter(group=="ACM" | group=="HVOL") %>%
   summarise(
-BAG3_non_TV=with(., signif(digits=4,fisher.test(x=BAG3_non_TV,y=group)$p.val)),
-BAG3_TV=with(., signif(digits=4,fisher.test(x=BAG3_TV,y=group)$p.val)),
-LMNA_non_TV=with(., signif(digits=4,fisher.test(x=LMNA_non_TV,y=group)$p.val)),
-MYH7_non_TV=with(., signif(digits=4,fisher.test(x=MYH7_non_TV,y=group)$p.val)),
-SCN5A_TV=with(., signif(digits=4,fisher.test(x=SCN5A_TV,y=group)$p.val)),
-TPM1_non_TV=with(., signif(digits=4,fisher.test(x=TPM1_non_TV,y=group)$p.val)),
-TPM1_TV=with(., signif(digits=4,fisher.test(x=TPM1_TV,y=group)$p.val)),
-TTN_TV=with(., signif(digits=4,fisher.test(x=TTN_TV,y=group)$p.val))
+  BAG3_non_TV=with(., signif(digits=4,fisher.test(x=BAG3_non_TV,y=group)$p.val)),
+  BAG3_TV=with(., signif(digits=4,fisher.test(x=BAG3_TV,y=group)$p.val)),
+  DSP_TV=NA,
+  LMNA_non_TV=with(., signif(digits=4,fisher.test(x=LMNA_non_TV,y=group)$p.val)),
+  LMNA_TV=NA,
+  MYH7_non_TV=with(., signif(digits=4,fisher.test(x=MYH7_non_TV,y=group)$p.val)),
+  SCN5A_TV=with(., signif(digits=4,fisher.test(x=SCN5A_TV,y=group)$p.val)),
+  TCAP_non_TV=NA,
+  TNNT2_non_TV=NA,
+  TPM1_non_TV=with(., signif(digits=4,fisher.test(x=TPM1_non_TV,y=group)$p.val)),
+  TPM1_TV=with(., signif(digits=4,fisher.test(x=TPM1_TV,y=group)$p.val)),
+  TTN_TV=with(., signif(digits=4,fisher.test(x=TTN_TV,y=group)$p.val))
+  )
 
-      )
+BurdenTest<-cbind(group="ACM-HVOL",BurdenTest)
 
-BurdenTest  
+
+
+
+BurdenTest_table<-t(rbind(Counts_Frequencies,BurdenTest))
+
+colnames(BurdenTest_table) <- c("ACM <br> (n=141)","DCM <br> (n=366)","HVOL <br> (n=445)","ACM vs HVOL <br> burden test")
+
+BurdenTest_table = BurdenTest_table[-1,]
+
+panderOptions('table.split.table', 800)
+pander(BurdenTest_table)
 
 ```
