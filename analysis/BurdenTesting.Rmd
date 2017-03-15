@@ -2,7 +2,10 @@
 title: "Burden Test"
 author: "risha govind"
 date: "`r Sys.Date()`"
-output: word_document
+output:
+  # html_document
+  word_document:
+    reference_docx: ./templateLandscape.docx
 ---
 
 ```{r setup, include=FALSE}
@@ -20,7 +23,7 @@ require(gdata)
 ## Load datasets
 
 #Rare Variants Data
-RareVar <- read.table("../input-files/Filtered_Rare_Variants.txt", header=T) 
+RareVarRaw <- read.table("../input-files/Filtered_Rare_Variants.txt", header=T) 
 
 
 #Sample IDs & cohorts
@@ -30,17 +33,16 @@ SampleIDs <- read.table("../input-files/Filtered_SampleIDs.txt", header=T)
 
 ```
 
-#10VC02667 = -7+1 = two frameshifts that cancel each other out.  ie not TTNtv
-#20PC04885 has a TTNtv and a LMNA SNP. 
-#10BK01803 has a TTNtv and a BAG3 SNP. 
-#Check there are no LMNAs in ACM please 
+####DCM : 10VC02667 = -7+1 = two frameshifts that cancel each other out.  ie not TTNtv
+####DCM : 10BK01803 has a TTNtv and a BAG3 SNP. 
+####ACM : 20PC04885 has a TTNtv and a LMNA SNP. 
 
 
 ```{r Label VarType against SampleIDs}
 
-RareVar$Gene_VarGroup <- paste(RareVar$GENE, RareVar$VarGroup, sep="_")
+RareVarRaw$Gene_VarGroup <- paste(RareVarRaw$GENE, RareVarRaw$Var_Group, sep="_")
 
-RareVar<-RareVar[,c("SampleID","Gene_VarGroup")]
+RareVar<-RareVarRaw[,c("SampleID","Gene_VarGroup")]
 
 RareVar <- aggregate(Gene_VarGroup ~ SampleID, data = RareVar, paste, collapse = ",")
 
@@ -61,14 +63,16 @@ AllSamples[grep("TPM1_non_TV", AllSamples$Gene_VarGroup), "TPM1_non_TV"] <- 1
 AllSamples[grep("TPM1_TV", AllSamples$Gene_VarGroup), "TPM1_TV"] <- 1
 AllSamples[grep("TTN_TV", AllSamples$Gene_VarGroup), "TTN_TV"] <- 1
 
+AllSamples[grep("TV", AllSamples$Gene_VarGroup), "ALL_GENES"] <- 1
+AllSamples[grep("TV", AllSamples$Gene_VarGroup), "ALL_GENES_except_TTN"] <- 1
+AllSamples <- within(AllSamples, ALL_GENES_except_TTN[Gene_VarGroup == 'TTN_TV'] <- NA)
 
 #Manually Change One DCM annotation
 AllSamples <- within(AllSamples, TTN_TV[SampleID == '10VC02667'] <- NA)
 
-
 ```
 
-#Frequencies and Burden Testing 
+##Frequencies and Burden Testing 
 ```{r burden test}
 
 AllSamples[is.na(AllSamples)] <- 0
@@ -94,13 +98,16 @@ group_by(group) %>%
   TNNT2_non_TV=binaryVariable_summary(TNNT2_non_TV,n()),
   TPM1_non_TV=binaryVariable_summary(TPM1_non_TV,n()),
   TPM1_TV=binaryVariable_summary(TPM1_TV,n()),
-  TTN_TV=binaryVariable_summary(TTN_TV,n())
+  TTN_TV=binaryVariable_summary(TTN_TV,n()),
+  ALL_GENES_except_TTN=binaryVariable_summary(ALL_GENES_except_TTN,n()),
+  ALL_GENES=binaryVariable_summary(ALL_GENES,n())
+
     ) 
 
 
 
-#ACM & HVOL have ZERO DSP_TV, LMNA_TV, TCAP_non_TV, TNNT2_non_TV . So NA
-BurdenTest <- AllSamples %>%
+#ACM & HVOL do not have any variants in these groups : DSP_TV, LMNA_TV, TCAP_non_TV, TNNT2_non_TV . So burden test result is NA
+BurdenTest1 <- AllSamples %>%
   filter(group=="ACM" | group=="HVOL") %>%
   summarise(
   BAG3_non_TV=with(., signif(digits=4,fisher.test(x=BAG3_non_TV,y=group)$p.val)),
@@ -114,21 +121,82 @@ BurdenTest <- AllSamples %>%
   TNNT2_non_TV=NA,
   TPM1_non_TV=with(., signif(digits=4,fisher.test(x=TPM1_non_TV,y=group)$p.val)),
   TPM1_TV=with(., signif(digits=4,fisher.test(x=TPM1_TV,y=group)$p.val)),
-  TTN_TV=with(., signif(digits=4,fisher.test(x=TTN_TV,y=group)$p.val))
+  TTN_TV=with(., signif(digits=4,fisher.test(x=TTN_TV,y=group)$p.val)),
+  ALL_GENES_except_TTN=with(., signif(digits=4,fisher.test(x=ALL_GENES_except_TTN,y=group)$p.val)),
+  ALL_GENES=with(., signif(digits=4,fisher.test(x=ALL_GENES,y=group)$p.val))
   )
 
-BurdenTest<-cbind(group="ACM-HVOL",BurdenTest)
+
+BurdenTest2 <- AllSamples %>%
+  filter(group=="ACM" | group=="DCM") %>%
+  summarise(
+  BAG3_non_TV=with(., signif(digits=4,fisher.test(x=BAG3_non_TV,y=group)$p.val)),
+  BAG3_TV=with(., signif(digits=4,fisher.test(x=BAG3_TV,y=group)$p.val)),
+  DSP_TV=with(., signif(digits=4,fisher.test(x=DSP_TV,y=group)$p.val)), 
+  LMNA_non_TV=with(., signif(digits=4,fisher.test(x=LMNA_non_TV,y=group)$p.val)),
+  LMNA_TV=with(., signif(digits=4,fisher.test(x=LMNA_TV,y=group)$p.val)), 
+  MYH7_non_TV=with(., signif(digits=4,fisher.test(x=MYH7_non_TV,y=group)$p.val)),
+  SCN5A_TV=NA,
+  TCAP_non_TV=with(., signif(digits=4,fisher.test(x=TCAP_non_TV,y=group)$p.val)), 
+  TNNT2_non_TV=with(., signif(digits=4,fisher.test(x=TNNT2_non_TV,y=group)$p.val)), 
+  TPM1_non_TV=NA,
+  TPM1_TV=NA,
+  TTN_TV=with(., signif(digits=4,fisher.test(x=TTN_TV,y=group)$p.val)),
+  ALL_GENES_except_TTN=with(., signif(digits=4,fisher.test(x=ALL_GENES_except_TTN,y=group)$p.val)),
+  ALL_GENES=with(., signif(digits=4,fisher.test(x=ALL_GENES,y=group)$p.val))  )
 
 
+BurdenTest3 <- AllSamples %>%
+  filter(group=="DCM" | group=="HVOL") %>%
+  summarise(
+  BAG3_non_TV=with(., signif(digits=4,fisher.test(x=BAG3_non_TV,y=group)$p.val)),
+  BAG3_TV=NA, 
+  DSP_TV=with(., signif(digits=4,fisher.test(x=DSP_TV,y=group)$p.val)), 
+  LMNA_non_TV=with(., signif(digits=4,fisher.test(x=LMNA_non_TV,y=group)$p.val)),
+  LMNA_TV=with(., signif(digits=4,fisher.test(x=LMNA_TV,y=group)$p.val)), 
+  MYH7_non_TV=with(., signif(digits=4,fisher.test(x=MYH7_non_TV,y=group)$p.val)),
+  SCN5A_TV=with(., signif(digits=4,fisher.test(x=SCN5A_TV,y=group)$p.val)),
+  TCAP_non_TV=with(., signif(digits=4,fisher.test(x=TCAP_non_TV,y=group)$p.val)), 
+  TNNT2_non_TV=with(., signif(digits=4,fisher.test(x=TNNT2_non_TV,y=group)$p.val)), 
+  TPM1_non_TV=with(., signif(digits=4,fisher.test(x=TPM1_non_TV,y=group)$p.val)),
+  TPM1_TV=with(., signif(digits=4,fisher.test(x=TPM1_TV,y=group)$p.val)),
+  TTN_TV=with(., signif(digits=4,fisher.test(x=TTN_TV,y=group)$p.val)),
+  ALL_GENES_except_TTN=with(., signif(digits=4,fisher.test(x=ALL_GENES_except_TTN,y=group)$p.val)),
+  ALL_GENES=with(., signif(digits=4,fisher.test(x=ALL_GENES,y=group)$p.val))  )
 
+Counts_Frequencies = Counts_Frequencies[,-1]
+BurdenTest_table<-t(rbind(Counts_Frequencies,BurdenTest2, BurdenTest1, BurdenTest3))
 
-BurdenTest_table<-t(rbind(Counts_Frequencies,BurdenTest))
+colnames(BurdenTest_table) <- c("ACM <br> (n=141)","DCM <br> (n=366)","HVOL <br> (n=445)","ACM vs DCM","ACM vs HVOL","DCM vs HVOL")
 
-colnames(BurdenTest_table) <- c("ACM <br> (n=141)","DCM <br> (n=366)","HVOL <br> (n=445)","ACM vs HVOL <br> burden test")
-
-BurdenTest_table = BurdenTest_table[-1,]
 
 panderOptions('table.split.table', 800)
 pander(BurdenTest_table)
 
+```
+
+##variantList
+```{r VariantsList}
+RareVar<-RareVarRaw
+
+RareVar$REF_ALT <- paste(RareVar$REF, RareVar$ALT, sep=">")
+RareVar$POS_REF_ALT <- paste(RareVar$POS, RareVar$REF_ALT, sep="")
+RareVar$HGVSg <- paste(RareVar$CHROM, RareVar$POS_REF_ALT, sep=": g.[")
+RareVar$HGVSg = paste(RareVar$HGVSg,"]",sep = "")
+#chr1:g.[35227587C>G]
+
+RareVar$HGVSc<- gsub(x = RareVar$HGVSc,pattern = ":", replacement = ": ")
+RareVar$HGVSp<- gsub(x = RareVar$HGVSp,pattern = ":", replacement = ": ")
+RareVar$CSQ<- gsub(x = RareVar$CSQ,pattern = "&", replacement = " & ")
+RareVar$CSQ<- gsub(x = RareVar$CSQ,pattern = "_", replacement = " ")
+
+VariantsList<-RareVar[,c("group","GENE","Var_Group","HGVSg","HGVSc","HGVSp","CSQ","ExAC_AF","af_filter","af_filter_pop")]
+
+VariantsList_colNames = colnames(VariantsList)
+VariantsList_colNames <- gsub(x = VariantsList_colNames,pattern = "_", replacement = " ",fixed = TRUE)
+colnames(VariantsList)<- VariantsList_colNames
+
+panderOptions('table.split.table', 800)
+panderOptions('table.split.table', 8000)
+pander(VariantsList)
 ```
