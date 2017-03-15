@@ -72,7 +72,7 @@ AllSamples <- within(AllSamples, TTN_TV[SampleID == '10VC02667'] <- NA)
 
 ```
 
-##Frequencies and Burden Testing 
+## Table 2 : Burden analysis 
 ```{r burden test}
 
 AllSamples[is.na(AllSamples)] <- 0
@@ -175,7 +175,7 @@ pander(BurdenTest_table)
 
 ```
 
-##variantList
+##SUpplementary Table : List of Variants in all Cohorts
 ```{r VariantsList}
 RareVar<-RareVarRaw
 

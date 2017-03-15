@@ -23,12 +23,21 @@ require(gdata)
 update_colnames_VarGroups <- function(x){
   x<-as.data.frame(x)
   x_colNames = colnames(x)
+  
   x_colNames<- gsub(x = x_colNames,pattern = "DCMVariant_nonTTN", replacement = "Other Variants <br> (n=5)",fixed = TRUE)
   x_colNames<- gsub(x = x_colNames,pattern = "GenotypeNegative", replacement = "Genotype Neg <br> (n=122)",fixed = TRUE)
   x_colNames<- gsub(x = x_colNames,pattern = "TTNtv", replacement = "TTNtv <br> (n=14)",fixed = TRUE)
   x_colNames<- gsub(x = x_colNames,pattern = "pvalue_TTN_GN", replacement = "P-value <br> (TTNtv vs Genotype Neg)",fixed = TRUE)
+  
+  x_colNames<- gsub(x = x_colNames,pattern = "ACM", replacement = "ACM <br> (n=141)",fixed = TRUE)
+  x_colNames<- gsub(x = x_colNames,pattern = "DCM", replacement = "DCM <br> (n=366)",fixed = TRUE)
+  x_colNames<- gsub(x = x_colNames,pattern = "HVOL", replacement = "HVOL <br> (n=445)",fixed = TRUE)  
+  x_colNames<- gsub(x = x_colNames,pattern = "pvalue_A_H", replacement = "ACM vs HVOL",fixed = TRUE)
+  x_colNames<- gsub(x = x_colNames,pattern = "pvalue_D_H", replacement = "DCM vs HVOL",fixed = TRUE)
+  x_colNames<- gsub(x = x_colNames,pattern = "pvalue_A_D", replacement = "ACM vs DCM",fixed = TRUE)
+
   colnames(x)<- x_colNames
-return(x)
+  return(x)
 }
 
 update_rownames_characteristics <- function(x){
@@ -41,7 +50,14 @@ update_rownames_characteristics <- function(x){
   x_rowNames<- gsub(x = x_rowNames,pattern = "SEX", replacement = "Sex (males)",fixed = TRUE)
   x_rowNames<- gsub(x = x_rowNames,pattern = "ATRIAL_FIBRILLATION", replacement = "Atrial fibrillation",fixed = TRUE)
   x_rowNames<- gsub(x = x_rowNames,pattern = "FAMILY_HISTORY_OF_CARDIOMYOPATHY", replacement = "Family history of CM",fixed = TRUE)
-  x_rowNames<- gsub(x = x_rowNames,pattern = "FAMILY_HISTORY_OF_SUDDEN_CARDIAC_DEATH", replacement = "Family history of SCD",fixed = TRUE)
+  
+  x_rowNames<- gsub(x = x_rowNames,pattern = "AGE_AT_scan", replacement = "Age at scan",fixed = TRUE)
+  x_rowNames<- gsub(x = x_rowNames,pattern = "EF_echo", replacement = "Left ventricular ejection fraction (echo)",fixed = TRUE)
+  x_rowNames<- gsub(x = x_rowNames,pattern = "EF_MRI", replacement = "Left ventricular ejection fraction (MRI)",fixed = TRUE)
+  x_rowNames<- gsub(x = x_rowNames,pattern = "DD_echo", replacement = "Left ventricular end diastolic diameter (echo)",fixed = TRUE)
+  x_rowNames<- gsub(x = x_rowNames,pattern = "DD_MRI", replacement = "Left ventricular end diastolic volume (MRI)",fixed = TRUE)
+  x_rowNames<- gsub(x = x_rowNames,pattern = "Ethnicity", replacement = "Ethnicity (caucasian)",fixed = TRUE)
+  
   x_rowNames<- gsub(x = x_rowNames,pattern = "_", replacement = " ",fixed = TRUE)
 
   rownames(x)<- x_rowNames
@@ -480,7 +496,6 @@ colnames(ACM_survival) <- c("BRUID","TIME","EVENT", "GENETIC_STATUS","Gr_alcohol
   #pander(ACM_survival)
 ```
 
-##Table 1
 ```{r ACM vs DCM vs HVOL, results='asis'}
 
 
@@ -521,15 +536,15 @@ ALLgroups$Ethnicity[ALLgroups$Ethnicity != "C"] <- 0
 ALLgroups$Ethnicity[ALLgroups$Ethnicity == "C"] <- 1 
 ALLgroups$Ethnicity <- as.numeric(ALLgroups$Ethnicity)
 
-GroupTable <- ALLgroups %>%
+GroupTable1 <- ALLgroups %>%
 group_by(group) %>%
   summarise(
     #total=n(),
     #continuous Variables
     AGE_AT_scan=continuousVariable_summary(AGE_AT_scan),
     EF_echo=continuousVariable_summary(EF_echo),
-    DD_echo=continuousVariable_summary(DD_echo),
     EF_MRI=continuousVariable_summary(EF_MRI),
+    DD_echo=continuousVariable_summary(DD_echo),
     DD_MRI=continuousVariable_summary(DD_MRI),    
     #binary Variables
     SEX=binaryVariable_summary(SEX,n()),
@@ -537,8 +552,61 @@ group_by(group) %>%
     
     ) 
 
-GroupTable<-GroupTable[,c("AGE_AT_scan","EF_echo","EF_MRI","DD_echo","DD_MRI","SEX","Ethnicity")]
+GroupTable2 <- ALLgroups %>%
+  filter(group=="ACM" | group=="DCM") %>%
+  summarise(
+  #continuous Variables
+	AGE_AT_scan=with(.,signif(digits=2,wilcox.test(AGE_AT_scan ~ group)$p.val)),
+	EF_echo="-",
+	EF_MRI="-",
+	DD_echo="-",
+	DD_MRI="-",
+	#binary Variables
+	SEX=with(., signif(digits=2,fisher.test(x=SEX,y=group)$p.val)),  
+	Ethnicity=1    
+)
+  
 
+GroupTable3 <- ALLgroups %>%
+  filter(group=="ACM" | group=="HVOL") %>%
+  summarise(
+  #continuous Variables
+	AGE_AT_scan=with(.,signif(digits=2,wilcox.test(AGE_AT_scan ~ group)$p.val)),
+	EF_echo="-",
+	EF_MRI="-",
+  DD_echo="-",	
+	DD_MRI="-",	
+	#binary Variables
+	SEX=with(., signif(digits=2,fisher.test(x=SEX,y=group)$p.val)), 
+	Ethnicity=1   
+)
+  
+
+GroupTable4 <- ALLgroups %>%
+  filter(group=="DCM" | group=="HVOL") %>%
+  summarise(
+  #continuous Variables
+	AGE_AT_scan=with(.,signif(digits=2,wilcox.test(AGE_AT_scan ~ group)$p.val)),
+	EF_echo="-",
+	EF_MRI=with(.,signif(digits=2,wilcox.test(EF_MRI ~ group)$p.val)),
+	DD_echo="-",
+	DD_MRI=with(.,signif(digits=2,wilcox.test(DD_MRI ~ group)$p.val)),	
+	#binary Variables
+	SEX=with(., signif(digits=2,fisher.test(x=SEX,y=group)$p.val)), 
+	Ethnicity=1 
+)
+
+GroupTable2<-cbind(group="pvalue_A_H",GroupTable2)
+GroupTable3<-cbind(group="pvalue_D_H",GroupTable3)
+GroupTable4<-cbind(group="pvalue_A_D",GroupTable4)
+
+```
+
+##Table 1 : Clinical characteristics of patient cohorts 
+
+```{r Combine all above : Clinical characteristics of patient cohorts}
+
+GroupTable<-rbind(GroupTable1,GroupTable2,GroupTable3,GroupTable4)
 
 #remove statistics based on empty columns 
 GroupTable$EF_echo[GroupTable$EF_echo == "NaN ± NA"] <- "-"
@@ -546,10 +614,19 @@ GroupTable$DD_echo[GroupTable$DD_echo == "NaN ± NA"] <- "-"
 GroupTable$EF_MRI[GroupTable$EF_MRI == "NaN ± NA"] <- "-"
 GroupTable$DD_MRI[GroupTable$DD_MRI == "NaN ± NA"] <- "-"
 
-GroupTable<-t(GroupTable)
 
-colnames(GroupTable) <- c("ACM <br> (n=141)","DCM <br> (n=366)","HVOL <br> (n=445)")
-rownames(GroupTable) <- c("Age at scan", "Left ventricular ejection fraction (echo)","Left ventricular ejection fraction (MRI)", "Left ventricular end diastolic diameter (echo)", "Left ventricular end diastolic volume (MRI)","Sex (male)","Ethnicity (caucasian)")
+GroupTable<-as.data.frame(t(GroupTable))
+
+#Make first row column names
+names(GroupTable) <- lapply(GroupTable[1, ], as.character)
+GroupTable <- GroupTable[-1,] 
+
+#Update Column names and row names
+GroupTable<-update_colnames_VarGroups(GroupTable)
+GroupTable<-update_rownames_characteristics(GroupTable)
+
+#change order of columns
+GroupTable<-GroupTable[,c(1,2,3,6,4,5)]
 
 panderOptions('table.split.table', 800)
 pander(GroupTable)
@@ -683,7 +760,7 @@ Outcome_wrt_genotype_NAs <-as.data.frame(RecoveryTable_NAs)
 
 ```
 
-## Table 3 
+## Table 3 : Characteristics of ACM cases with and without titin truncating variants  & Outcome based on genotype 
 ```{r Table 3}
 
 Characteristics_ACM_Plus_Outcome <-rbind(Characteristics_ACM_wrt_TTNTv,Outcome_wrt_genotype)
@@ -712,7 +789,7 @@ panderOptions('table.split.table', 800)
 pander(Characteristics_ACM_Plus_Outcome_NAs)
 ```
 
-## Supplementary Table 2 
+## Supplementary Table 2 : Clinical characteristics of ACM cohort based on genotype
 
 ```{r Supplementary Table 2}
 
