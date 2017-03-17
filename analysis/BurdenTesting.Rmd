@@ -175,28 +175,3 @@ pander(BurdenTest_table)
 
 ```
 
-##SUpplementary Table : List of Variants in all Cohorts
-```{r VariantsList}
-RareVar<-RareVarRaw
-
-RareVar$REF_ALT <- paste(RareVar$REF, RareVar$ALT, sep=">")
-RareVar$POS_REF_ALT <- paste(RareVar$POS, RareVar$REF_ALT, sep="")
-RareVar$HGVSg <- paste(RareVar$CHROM, RareVar$POS_REF_ALT, sep=": g.[")
-RareVar$HGVSg = paste(RareVar$HGVSg,"]",sep = "")
-#chr1:g.[35227587C>G]
-
-RareVar$HGVSc<- gsub(x = RareVar$HGVSc,pattern = ":", replacement = ": ")
-RareVar$HGVSp<- gsub(x = RareVar$HGVSp,pattern = ":", replacement = ": ")
-RareVar$CSQ<- gsub(x = RareVar$CSQ,pattern = "&", replacement = " & ")
-RareVar$CSQ<- gsub(x = RareVar$CSQ,pattern = "_", replacement = " ")
-
-VariantsList<-RareVar[,c("group","GENE","Var_Group","HGVSg","HGVSc","HGVSp","CSQ","ExAC_AF","af_filter","af_filter_pop")]
-
-VariantsList_colNames = colnames(VariantsList)
-VariantsList_colNames <- gsub(x = VariantsList_colNames,pattern = "_", replacement = " ",fixed = TRUE)
-colnames(VariantsList)<- VariantsList_colNames
-
-panderOptions('table.split.table', 800)
-panderOptions('table.split.table', 8000)
-pander(VariantsList)
-```

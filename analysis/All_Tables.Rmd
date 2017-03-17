@@ -16,6 +16,13 @@ library(pander)
 library(gdata)
 require(gdata)
 
+
+#To Do
+########
+# List of Samples from ACM TTNtv/ nonTTN Group [From Liz] : Still getting this list from flat files. Update code to get this from Rare Variants Data
+
+ 
+
 ```
 
 ```{r functions}
@@ -504,6 +511,30 @@ write.table(ACM_survival, quote=FALSE, sep ="\t", row.names = F, file="../ACM_Su
 #pander(ACM_survival)
 ```
 
+### mean Followup Time for ACM groups (in Years)
+```{r}
+
+#Mean for groups within ACM
+mean_Followup_Time <- ACM_survival %>%
+  group_by(GENETIC_STATUS) %>%
+  summarise(
+    FollowupTime_in_years=paste(signif(digits=2,(mean(TIME,na.rm=T)/365))," \u00b1 ", signif(digits=2,sd(TIME,na.rm=T)/365), sep="")
+  )
+ 
+
+#Mean for entire ACM
+mean_Followup_Time2 <- ACM_survival %>%
+  summarise(
+    GENETIC_STATUS="ALL",
+    FollowupTime_in_years=paste(signif(digits=2,(mean(TIME,na.rm=T)/365))," \u00b1 ", signif(digits=2,sd(TIME,na.rm=T)/365), sep="")
+  )
+
+mean_Followup_Time<-rbind(mean_Followup_Time,mean_Followup_Time2)
+
+pander(mean_Followup_Time)
+
+
+```
 ```{r ACM vs DCM vs HVOL, results='asis'}
 
 
@@ -845,59 +876,59 @@ group_by(group) %>%
 BurdenTest1 <- AllSamples %>%
   filter(group=="ACM" | group=="HVOL") %>%
   summarise(
-  BAG3_non_TV=with(., signif(digits=4,fisher.test(x=BAG3_non_TV,y=group)$p.val)),
-  BAG3_TV=with(., signif(digits=4,fisher.test(x=BAG3_TV,y=group)$p.val)),
+  BAG3_non_TV=with(., signif(digits=2,fisher.test(x=BAG3_non_TV,y=group)$p.val)),
+  BAG3_TV=with(., signif(digits=2,fisher.test(x=BAG3_TV,y=group)$p.val)),
   DSP_TV=NA,
-  LMNA_non_TV=with(., signif(digits=4,fisher.test(x=LMNA_non_TV,y=group)$p.val)),
+  LMNA_non_TV=with(., signif(digits=2,fisher.test(x=LMNA_non_TV,y=group)$p.val)),
   LMNA_TV=NA,
-  MYH7_non_TV=with(., signif(digits=4,fisher.test(x=MYH7_non_TV,y=group)$p.val)),
-  SCN5A_TV=with(., signif(digits=4,fisher.test(x=SCN5A_TV,y=group)$p.val)),
+  MYH7_non_TV=with(., signif(digits=2,fisher.test(x=MYH7_non_TV,y=group)$p.val)),
+  SCN5A_TV=with(., signif(digits=2,fisher.test(x=SCN5A_TV,y=group)$p.val)),
   TCAP_non_TV=NA,
   TNNT2_non_TV=NA,
-  TPM1_non_TV=with(., signif(digits=4,fisher.test(x=TPM1_non_TV,y=group)$p.val)),
-  TPM1_TV=with(., signif(digits=4,fisher.test(x=TPM1_TV,y=group)$p.val)),
-  TTN_TV=with(., signif(digits=4,fisher.test(x=TTN_TV,y=group)$p.val)),
-  ALL_GENES_except_TTN=with(., signif(digits=4,fisher.test(x=ALL_GENES_except_TTN,y=group)$p.val)),
-  ALL_GENES=with(., signif(digits=4,fisher.test(x=ALL_GENES,y=group)$p.val))
+  TPM1_non_TV=with(., signif(digits=2,fisher.test(x=TPM1_non_TV,y=group)$p.val)),
+  TPM1_TV=with(., signif(digits=2,fisher.test(x=TPM1_TV,y=group)$p.val)),
+  TTN_TV=with(., signif(digits=2,fisher.test(x=TTN_TV,y=group)$p.val)),
+  ALL_GENES_except_TTN=with(., signif(digits=2,fisher.test(x=ALL_GENES_except_TTN,y=group)$p.val)),
+  ALL_GENES=with(., signif(digits=2,fisher.test(x=ALL_GENES,y=group)$p.val))
   )
 
 
 BurdenTest2 <- AllSamples %>%
   filter(group=="ACM" | group=="DCM") %>%
   summarise(
-  BAG3_non_TV=with(., signif(digits=4,fisher.test(x=BAG3_non_TV,y=group)$p.val)),
-  BAG3_TV=with(., signif(digits=4,fisher.test(x=BAG3_TV,y=group)$p.val)),
-  DSP_TV=with(., signif(digits=4,fisher.test(x=DSP_TV,y=group)$p.val)), 
-  LMNA_non_TV=with(., signif(digits=4,fisher.test(x=LMNA_non_TV,y=group)$p.val)),
-  LMNA_TV=with(., signif(digits=4,fisher.test(x=LMNA_TV,y=group)$p.val)), 
-  MYH7_non_TV=with(., signif(digits=4,fisher.test(x=MYH7_non_TV,y=group)$p.val)),
+  BAG3_non_TV=with(., signif(digits=2,fisher.test(x=BAG3_non_TV,y=group)$p.val)),
+  BAG3_TV=with(., signif(digits=2,fisher.test(x=BAG3_TV,y=group)$p.val)),
+  DSP_TV=with(., signif(digits=2,fisher.test(x=DSP_TV,y=group)$p.val)), 
+  LMNA_non_TV=with(., signif(digits=2,fisher.test(x=LMNA_non_TV,y=group)$p.val)),
+  LMNA_TV=with(., signif(digits=2,fisher.test(x=LMNA_TV,y=group)$p.val)), 
+  MYH7_non_TV=with(., signif(digits=2,fisher.test(x=MYH7_non_TV,y=group)$p.val)),
   SCN5A_TV=NA,
-  TCAP_non_TV=with(., signif(digits=4,fisher.test(x=TCAP_non_TV,y=group)$p.val)), 
-  TNNT2_non_TV=with(., signif(digits=4,fisher.test(x=TNNT2_non_TV,y=group)$p.val)), 
+  TCAP_non_TV=with(., signif(digits=2,fisher.test(x=TCAP_non_TV,y=group)$p.val)), 
+  TNNT2_non_TV=with(., signif(digits=2,fisher.test(x=TNNT2_non_TV,y=group)$p.val)), 
   TPM1_non_TV=NA,
   TPM1_TV=NA,
-  TTN_TV=with(., signif(digits=4,fisher.test(x=TTN_TV,y=group)$p.val)),
-  ALL_GENES_except_TTN=with(., signif(digits=4,fisher.test(x=ALL_GENES_except_TTN,y=group)$p.val)),
-  ALL_GENES=with(., signif(digits=4,fisher.test(x=ALL_GENES,y=group)$p.val))  )
+  TTN_TV=with(., signif(digits=2,fisher.test(x=TTN_TV,y=group)$p.val)),
+  ALL_GENES_except_TTN=with(., signif(digits=2,fisher.test(x=ALL_GENES_except_TTN,y=group)$p.val)),
+  ALL_GENES=with(., signif(digits=2,fisher.test(x=ALL_GENES,y=group)$p.val))  )
 
 
 BurdenTest3 <- AllSamples %>%
   filter(group=="DCM" | group=="HVOL") %>%
   summarise(
-  BAG3_non_TV=with(., signif(digits=4,fisher.test(x=BAG3_non_TV,y=group)$p.val)),
+  BAG3_non_TV=with(., signif(digits=2,fisher.test(x=BAG3_non_TV,y=group)$p.val)),
   BAG3_TV=NA, 
-  DSP_TV=with(., signif(digits=4,fisher.test(x=DSP_TV,y=group)$p.val)), 
-  LMNA_non_TV=with(., signif(digits=4,fisher.test(x=LMNA_non_TV,y=group)$p.val)),
-  LMNA_TV=with(., signif(digits=4,fisher.test(x=LMNA_TV,y=group)$p.val)), 
-  MYH7_non_TV=with(., signif(digits=4,fisher.test(x=MYH7_non_TV,y=group)$p.val)),
-  SCN5A_TV=with(., signif(digits=4,fisher.test(x=SCN5A_TV,y=group)$p.val)),
-  TCAP_non_TV=with(., signif(digits=4,fisher.test(x=TCAP_non_TV,y=group)$p.val)), 
-  TNNT2_non_TV=with(., signif(digits=4,fisher.test(x=TNNT2_non_TV,y=group)$p.val)), 
-  TPM1_non_TV=with(., signif(digits=4,fisher.test(x=TPM1_non_TV,y=group)$p.val)),
-  TPM1_TV=with(., signif(digits=4,fisher.test(x=TPM1_TV,y=group)$p.val)),
-  TTN_TV=with(., signif(digits=4,fisher.test(x=TTN_TV,y=group)$p.val)),
-  ALL_GENES_except_TTN=with(., signif(digits=4,fisher.test(x=ALL_GENES_except_TTN,y=group)$p.val)),
-  ALL_GENES=with(., signif(digits=4,fisher.test(x=ALL_GENES,y=group)$p.val))  )
+  DSP_TV=with(., signif(digits=2,fisher.test(x=DSP_TV,y=group)$p.val)), 
+  LMNA_non_TV=with(., signif(digits=2,fisher.test(x=LMNA_non_TV,y=group)$p.val)),
+  LMNA_TV=with(., signif(digits=2,fisher.test(x=LMNA_TV,y=group)$p.val)), 
+  MYH7_non_TV=with(., signif(digits=2,fisher.test(x=MYH7_non_TV,y=group)$p.val)),
+  SCN5A_TV=with(., signif(digits=2,fisher.test(x=SCN5A_TV,y=group)$p.val)),
+  TCAP_non_TV=with(., signif(digits=2,fisher.test(x=TCAP_non_TV,y=group)$p.val)), 
+  TNNT2_non_TV=with(., signif(digits=2,fisher.test(x=TNNT2_non_TV,y=group)$p.val)), 
+  TPM1_non_TV=with(., signif(digits=2,fisher.test(x=TPM1_non_TV,y=group)$p.val)),
+  TPM1_TV=with(., signif(digits=2,fisher.test(x=TPM1_TV,y=group)$p.val)),
+  TTN_TV=with(., signif(digits=2,fisher.test(x=TTN_TV,y=group)$p.val)),
+  ALL_GENES_except_TTN=with(., signif(digits=2,fisher.test(x=ALL_GENES_except_TTN,y=group)$p.val)),
+  ALL_GENES=with(., signif(digits=2,fisher.test(x=ALL_GENES,y=group)$p.val))  )
 
 Counts_Frequencies = Counts_Frequencies[,-1]
 BurdenTest_table<-t(rbind(Counts_Frequencies,BurdenTest2, BurdenTest1, BurdenTest3))
@@ -913,6 +944,7 @@ pander(BurdenTest_table)
 
 
 ## Table 3 : Characteristics of ACM cases with and without titin truncating variants  & Outcome based on genotype 
+###### The patient with 'Family history of CM' in 'Other Variants' group is the patient with BAG3tv [20WX04905]. His age at clinical assement is also 45years, much closer to TTNtv 
 ```{r Table 3}
 
 Characteristics_ACM_Plus_Outcome <-rbind(Characteristics_ACM_wrt_TTNTv,Outcome_wrt_genotype)
