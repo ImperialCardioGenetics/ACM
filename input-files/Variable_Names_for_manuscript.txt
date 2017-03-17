@@ -1,0 +1,18 @@
+AGE_AT_scan	Age at scan
+EF_echo	Left ventricular ejection fraction (echo)
+EF_MRI	Left ventricular ejection fraction (MRI)
+DD_echo	Left ventricular end diastolic diameter (echo)
+DD_MRI	Left ventricular end diastolic volume (MRI)
+Ethnicity	Ethnicity (caucasian)
+Alcohol_grams	Alcohol (grams)
+Sex_males	Sex (males)
+DCMVariant_nonTTN	Other Variants (n=5)
+GenotypeNegative	Genotype Neg (n=122)
+TTNtv	TTNtv (n=14)
+pvalue_TTN_GN	P-value (TTNtv vs Genotype Neg)
+ACM	ACM (n=141)
+DCM	DCM (n=366)
+HVOL	HVOL (n=445)  
+pvalue_A_H	ACM vs HVOL
+pvalue_D_H	DCM vs HVOL
+pvalue_A_D	ACM vs DCM
