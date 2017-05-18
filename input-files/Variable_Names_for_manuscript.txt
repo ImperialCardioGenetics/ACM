@@ -16,3 +16,8 @@ HVOL	HVOL (n=445)
 pvalue_A_H	ACM vs HVOL
 pvalue_D_H	DCM vs HVOL
 pvalue_A_D	ACM vs DCM
+GenotypeNeg_120	Genotype Neg (n=120)
+FollowupTime_in_years	Mean follow up period (years)
+Death_or_Transplant	Death or transplant
+LVEF_recovery	Recovery of left ventricular ejection fraction 
+No_LVEF_Recovery	No recovery of left ventricular ejection fraction

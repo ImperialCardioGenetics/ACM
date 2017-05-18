@@ -11,16 +11,18 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning=FALSE, size="smallsize")
 library(lazyeval)
+library(plyr)
 library(dplyr)
 library(pander)
 library(gdata)
-require(gdata)
+library(gtools)
+
 
 
 #To Do
 ########
 # List of Samples from ACM TTNtv/ nonTTN Group [From Liz] : Still getting this list from flat files. Update code to get this from Rare Variants Data
-# DCM_demo & HVOL_demo : the infiles for these won't be shared with the world. Would it be worth seperating the code this it? So at least this script can run smoothly
+# DCM_demographics & HVOL_demographics : the infiles for these won't be shared with the world. Would it be worth seperating the code this it? So at least the script can run smoothly
 # NYHA CLASS is categorical - currently treated as continuous variable 
 # Multiple Tables : Number in each group in column names is hard coded. Need to be fixed 
 
@@ -45,6 +47,7 @@ ACM_TTNtv_Group <- read.table("../input-files/ACM_TTNtv_group.txt", header=T) %>
 ACM_DCM_var_nonTTN_Group <- read.table("../input-files/ACM_DCM_var_nonTTN_group.txt", header=T) %>%
   tbl_df
 
+
 #Clinical Phenotype of ACM Samples [From Spanish Team]
 ACM_pheno = read.xls("../input-files/ACM_pheno.xlsx", sheet=1, header=T, fileEncoding="latin1") 
 
@@ -65,9 +68,15 @@ HVOL_demo <- read.table("../input-files/HVOL_pheno.txt", header=T, sep='\t')
 #Rare Variants Data
 RareVarRaw <- read.table("../input-files/Filtered_Rare_Variants.txt", header=T) 
 
+#List of Genes & VarTypes to Burden Test on
+Gene_VarType_BurdenTest_list <- read.table("../input-files/Gene_VarType_BurdenTest.txt", header=F)
 
 #Sample IDs & cohorts
 SampleIDs <- read.table("../input-files/Filtered_SampleIDs.txt", header=T) 
+
+#ExAv frequencies from Roddy
+GeneVartype_ExAC_freqs <- read.table("../input-files/GeneVartype_ExAC_freqs.txt", header=T,sep='\t') 
+
 
 #dim(ACM_pheno)
 ```
@@ -75,9 +84,8 @@ SampleIDs <- read.table("../input-files/Filtered_SampleIDs.txt", header=T)
 
 ```{r functions}
 
-# Rename column by name: change "beta" to "two"
-# names(d)[names(d)=="beta"] <- "two"
-#firstup("i like pizza very much")
+# Rename column names directly. Don't concert to array first. :  names(d)[names(d)=="beta"] <- "two"
+# Uppercase first alphabet only : firstup("i like pizza very much")
 
 firstup <- function(x) {
    substr(x, 1, 1) <- toupper(substr(x, 1, 1))
@@ -96,8 +104,8 @@ update_Variable_Names_for_manuscript <- function(x){
     
     #colnames(x)[colnames(x)==headerOld] <- headerNew
     #rownames(x)[rownames(x)==headerOld] <- headerNew
-  colnames(x) <- gsub(headerOld, headerNew, colnames(x))
-  rownames(x) <- gsub(headerOld, headerNew, rownames(x))    
+    colnames(x) <- gsub(headerOld, headerNew, colnames(x))
+    rownames(x) <- gsub(headerOld, headerNew, rownames(x))    
   }
   
   colnames(x) <- gsub("\\_", " ", colnames(x))
@@ -108,13 +116,46 @@ update_Variable_Names_for_manuscript <- function(x){
 
 
 continuousVariable_summary <- function(x){
-  c<-paste(round(mean(x,na.rm=T), digits=2)," \u00b1 ", round(sd(x,na.rm=T), digits=2), sep="")
+  c<-paste(round(mean(x,na.rm=T), digits=1)," \u00b1 ", round(sd(x,na.rm=T), digits=1), sep="")
   return(c)
 }
 
 binaryVariable_summary <- function(e,f){
   b<-paste(round(sum(e,na.rm=T))," \u0028",round(((sum(e,na.rm=T)/f) * 100), digits=1),"\u0025\u0029", sep="")
   return(b)
+}
+
+
+Summary_burden_Analysis <- function(e,f){
+  a <- e %>%
+    summarise(
+    TTN_TV=with(., signif(digits=2,fisher.test(x=TTN_TV,y=group)$p.val)),
+    ALL_GENES_except_TTN=with(., signif(digits=2,fisher.test(x=ALL_GENES_except_TTN,y=group)$p.val)),
+    ALL_GENES=with(., signif(digits=2,fisher.test(x=ALL_GENES,y=group)$p.val))  )
+  rownames(a)<-f
+  return(a)
+}
+
+All_burden_Analysis <- function(e,f){
+
+  #remove columns that have all zeros in the groups we are comparing - fisher.test gives error 
+  e<-e[, colSums(e != 0) > 0]
+
+  a <- e %>%
+    summarise_each(funs(signif(digits=2,fisher.test(x=.,y=group)$p.val)), vars = BAG3_non_TV:ALL_GENES)  #BAG3_non_TV & ALL_GENES are hardcoded !!! 
+
+  #update colnames
+  colnames(a)<-colnames(e[-1])
+  rownames(a)<-f
+
+  #a<-t(a)
+  return(a)
+}
+
+RBIND <- function(datalist) {
+  temp <- rbind.fill(datalist)
+  rownames(temp) <- unlist(lapply(datalist, row.names))
+  temp
 }
 
 
@@ -465,7 +506,8 @@ ACM %>%
 
 ```{r Preparing for survival Analysis}
 
-ACM_survival <- ACM[,c("BRUID","VarGroup","DATE_INITIAL_CLINICAL_ASSESSMENT","DATE_OF_LAST_CONSULTATION","DEATH","DATE_OF_DEATH","TRANSPLANT","DATE_OF_TRANSPLANT","Alcohol_grams","Age_at_initial_clinical_assesement","Initial_ejection_fraction","Diastolic_diameter","Sex_males","Atrial_fibrillation","Family_history_of_CM","Family_history_of_SCD")]
+#Saving EJECTION_FRACTION_RECOVERY in here is using ACM_survival_raw later for recovery analysis 
+ACM_survival <- ACM[,c("BRUID","VarGroup","DATE_INITIAL_CLINICAL_ASSESSMENT","DATE_OF_LAST_CONSULTATION","DEATH","DATE_OF_DEATH","TRANSPLANT","DATE_OF_TRANSPLANT","Alcohol_grams","Age_at_initial_clinical_assesement","Initial_ejection_fraction","Diastolic_diameter","Sex_males","Atrial_fibrillation","Family_history_of_CM","Family_history_of_SCD","EJECTION_FRACTION_RECOVERY")]
 
 #Add a column : Time (days)
 ACM_survival<-cbind(ACM_survival,TIME="")
@@ -497,6 +539,9 @@ ACM_survival[endEvent, "EndDate"] <- ACM_survival[endEvent, "DATE_OF_LAST_CONSUL
 ACM_survival$TIME <- as.Date(as.character(ACM_survival$EndDate), format="%Y-%m-%d")-
   as.Date(as.character(ACM_survival$DATE_INITIAL_CLINICAL_ASSESSMENT), format="%Y-%m-%d")
 
+
+ACM_survival_raw<-ACM_survival
+
 ACM_survival <- ACM_survival[,c("BRUID","TIME","EVENT", "VarGroup","Alcohol_grams","Age_at_initial_clinical_assesement","Initial_ejection_fraction","Diastolic_diameter","Sex_males","Atrial_fibrillation","Family_history_of_CM","Family_history_of_SCD")]
 
 colnames(ACM_survival) <- c("BRUID","TIME","EVENT", "GENETIC_STATUS","Alcohol_grams","Age_at_initial_clinical_assesement","Initial_ejection_fraction","Diastolic_diameter","Sex_males","Atrial_fibrillation","Family_history_of_CM","Family_history_of_SCD")
@@ -507,30 +552,6 @@ write.table(ACM_survival, quote=FALSE, sep ="\t", row.names = F, file="../ACM_Su
 #pander(ACM_survival)
 ```
 
-### mean Followup Time for ACM groups (in Years)
-```{r}
-
-#Mean for groups within ACM
-mean_Followup_Time <- ACM_survival %>%
-  group_by(GENETIC_STATUS) %>%
-  summarise(
-    FollowupTime_in_years=paste(signif(digits=2,(mean(TIME,na.rm=T)/365))," \u00b1 ", signif(digits=2,sd(TIME,na.rm=T)/365), sep="")
-  )
- 
-
-#Mean for entire ACM
-mean_Followup_Time2 <- ACM_survival %>%
-  summarise(
-    GENETIC_STATUS="ALL",
-    FollowupTime_in_years=paste(signif(digits=2,(mean(TIME,na.rm=T)/365))," \u00b1 ", signif(digits=2,sd(TIME,na.rm=T)/365), sep="")
-  )
-
-mean_Followup_Time<-rbind(mean_Followup_Time,mean_Followup_Time2)
-
-pander(mean_Followup_Time)
-
-
-```
 ```{r ACM vs DCM vs HVOL, results='asis'}
 
 
@@ -633,7 +654,7 @@ GroupTable4<-cbind(group="pvalue_A_D",GroupTable4)
 
 ```
 
-##Table 1 : Clinical characteristics of patient cohorts 
+#Table 1 : Clinical characteristics of patient cohorts 
 
 ```{r Combine all above : Clinical characteristics of patient cohorts}
 
@@ -668,7 +689,7 @@ pander(GroupTable)
 
 
 #### Table for internal use - missing data info for above table
-``` {r missing data info for above table}
+```{r missing data info for above table}
 
 GroupTable <- ALLgroups %>%
   group_by(group) %>%
@@ -703,7 +724,7 @@ pander(GroupTable)
 
 ```{r ACM - recovery stable severe}
 
-ACM_recov_temp <- ACM[,c("BRUID","VarGroup","DEATH","TRANSPLANT","EJECTION_FRACTION_RECOVERY")]
+ACM_recov_temp <- ACM_survival_raw[,c("BRUID","VarGroup","DEATH","TRANSPLANT","EJECTION_FRACTION_RECOVERY","TIME")]
 
 ACM_recov <-cbind(ACM_recov_temp,Death_or_Transplant=0,LVEF_recovery=0,No_LVEF_Recovery=0)
 
@@ -718,20 +739,30 @@ ACM_recov$No_LVEF_Recovery[ACM_recov$EJECTION_FRACTION_RECOVERY==0] <- 1
 ACM_recov$No_LVEF_Recovery[is.na(ACM_recov$EJECTION_FRACTION_RECOVERY)] <- NA
 ACM_recov$No_LVEF_Recovery[ACM_recov$Death_or_Transplant==1] <- 0
 
+ACM_recov_with_NA<-ACM_recov
+
+ACM_recov<-ACM_recov[!is.na(ACM_recov$LVEF_recovery),]
+
+ACM_recov$VarGroup <- gsub("GenotypeNegative", "GenotypeNeg_120", ACM_recov$VarGroup)
+
+ACM_recov$TIME <- as.numeric(ACM_recov$TIME)/365
 
 RecoveryTable <- ACM_recov %>%
   group_by(VarGroup) %>%
   summarise(
     #binary Variables
-    Death_or_Transplant=binaryVariable_summary(Death_or_Transplant,n()),
+    FollowupTime_in_years=continuousVariable_summary(TIME),
+    Death_or_transplant=binaryVariable_summary(Death_or_Transplant,n()),
     LVEF_recovery=binaryVariable_summary(LVEF_recovery,n()),    
     No_LVEF_Recovery=binaryVariable_summary(No_LVEF_Recovery,n())
   ) 
 
+
 RecoveryTable2 <- ACM_recov %>%
-  filter(VarGroup=="TTNtv" | VarGroup=="GenotypeNegative") %>%
+  filter(VarGroup=="TTNtv" | VarGroup=="GenotypeNeg_120") %>%
   summarise(
-    Death_or_Transplant=with(., signif(digits=2,fisher.test(x=Death_or_Transplant,y=VarGroup)$p.val)),
+    FollowupTime_in_years=with(.,signif(digits=2,wilcox.test(TIME ~ VarGroup)$p.val)),
+    Death_or_transplant=with(., signif(digits=2,fisher.test(x=Death_or_Transplant,y=VarGroup)$p.val)),
     LVEF_recovery=with(., signif(digits=2,fisher.test(x=LVEF_recovery,y=VarGroup)$p.val)),
     No_LVEF_Recovery=with(., signif(digits=2,fisher.test(x=No_LVEF_Recovery,y=VarGroup)$p.val))
   )
@@ -760,12 +791,19 @@ RecoveryTable<-RecoveryTable[,c(3,2,1,4)]
 Outcome_wrt_genotype <- as.data.frame(RecoveryTable)
 
 
+
+
+
+
+
+
+
 ```
 
 ```{r Outcome_wrt_genotype_NAs}
 
 
-RecoveryTable_NAs <- ACM_recov %>%
+RecoveryTable_NAs <- ACM_recov_with_NA %>%
   group_by(VarGroup) %>%
   summarise(
     Death_or_Transplant=sum(is.na(Death_or_Transplant)),
@@ -810,149 +848,122 @@ RareVar <- aggregate(Gene_VarGroup ~ SampleID, data = RareVar, paste, collapse =
 #Merge Tables
 AllSamples<-merge(RareVar, SampleIDs, by.x = "SampleID", by.y = "IID", all = TRUE) 
 
+Gene_vector <-unique(as.vector(Gene_VarType_BurdenTest_list$V1))
 
-AllSamples[grep("BAG3_non_TV", AllSamples$Gene_VarGroup), "BAG3_non_TV"] <- 1
-AllSamples[grep("BAG3_TV", AllSamples$Gene_VarGroup), "BAG3_TV"] <- 1
-AllSamples[grep("DSP_TV", AllSamples$Gene_VarGroup), "DSP_TV"] <- 1
-AllSamples[grep("LMNA_non_TV", AllSamples$Gene_VarGroup), "LMNA_non_TV"] <- 1
-AllSamples[grep("LMNA_TV", AllSamples$Gene_VarGroup), "LMNA_TV"] <- 1
-AllSamples[grep("MYH7_non_TV", AllSamples$Gene_VarGroup), "MYH7_non_TV"] <- 1
-AllSamples[grep("SCN5A_TV", AllSamples$Gene_VarGroup), "SCN5A_TV"] <- 1
-AllSamples[grep("TCAP_non_TV", AllSamples$Gene_VarGroup), "TCAP_non_TV"] <- 1
-AllSamples[grep("TNNT2_non_TV", AllSamples$Gene_VarGroup), "TNNT2_non_TV"] <- 1
-AllSamples[grep("TPM1_non_TV", AllSamples$Gene_VarGroup), "TPM1_non_TV"] <- 1
-AllSamples[grep("TPM1_TV", AllSamples$Gene_VarGroup), "TPM1_TV"] <- 1
-AllSamples[grep("TTN_TV", AllSamples$Gene_VarGroup), "TTN_TV"] <- 1
+for (i in 1:length(Gene_vector)) { 
+  gene<-Gene_vector[i]
+  AllSamples[grep(gene, AllSamples$Gene_VarGroup), gene] <- 1  
 
-AllSamples[grep("TV", AllSamples$Gene_VarGroup), "ALL_GENES"] <- 1
+}
+
+
 AllSamples[grep("TV", AllSamples$Gene_VarGroup), "ALL_GENES_except_TTN"] <- 1
 AllSamples <- within(AllSamples, ALL_GENES_except_TTN[Gene_VarGroup == 'TTN_TV'] <- NA)
+
+AllSamples[grep("TV", AllSamples$Gene_VarGroup), "ALL_GENES"] <- 1
 
 #Manually Change One DCM annotation
 AllSamples <- within(AllSamples, TTN_TV[SampleID == '10VC02667'] <- NA)
 
+
+AllSamples[is.na(AllSamples)] <- 0
+
+group_VarGroups<-as.data.frame(AllSamples[ , !names(AllSamples) %in% c("SampleID","Gene_VarGroup")])
+
+ACM_DCM_data <- filter(group_VarGroups, group=="ACM" | group=="DCM")
+ACM_HVOL_data <- filter(group_VarGroups, group=="ACM" | group=="HVOL")
+DCM_HVOL_data <- filter(group_VarGroups, group=="DCM" | group=="HVOL")
+
 ```
+
 
 
 ```{r burden test}
 
-AllSamples[is.na(AllSamples)] <- 0
 
-binaryVariable_summary <- function(e,f){
-  b<-paste(round(sum(e,na.rm=T))," \u0028",round(((sum(e,na.rm=T)/f) * 100), digits=1),"\u0025\u0029", sep="")
-return(b)
-}
-
-Counts_Frequencies <- AllSamples %>%
+Mean_stdDev_summary_temp <- group_VarGroups %>%
 group_by(group) %>%
   summarise(
     #total=n(),
     #binary Variables
-  BAG3_non_TV=binaryVariable_summary(BAG3_non_TV,n()),
-  BAG3_TV=binaryVariable_summary(BAG3_TV,n()),
-  DSP_TV=binaryVariable_summary(DSP_TV,n()),
-  LMNA_non_TV=binaryVariable_summary(LMNA_non_TV,n()),
-  LMNA_TV=binaryVariable_summary(LMNA_TV,n()),
-  MYH7_non_TV=binaryVariable_summary(MYH7_non_TV,n()),
-  SCN5A_TV=binaryVariable_summary(SCN5A_TV,n()),
-  TCAP_non_TV=binaryVariable_summary(TCAP_non_TV,n()),
-  TNNT2_non_TV=binaryVariable_summary(TNNT2_non_TV,n()),
-  TPM1_non_TV=binaryVariable_summary(TPM1_non_TV,n()),
-  TPM1_TV=binaryVariable_summary(TPM1_TV,n()),
   TTN_TV=binaryVariable_summary(TTN_TV,n()),
   ALL_GENES_except_TTN=binaryVariable_summary(ALL_GENES_except_TTN,n()),
   ALL_GENES=binaryVariable_summary(ALL_GENES,n())
-
     ) 
 
+Mean_stdDev_summary_temp<-as.data.frame(Mean_stdDev_summary_temp)
+Mean_stdDev_summary <- data.frame(Mean_stdDev_summary_temp[,-1], row.names=Mean_stdDev_summary_temp[,1])
 
 
-#ACM & HVOL do not have any variants in these groups : DSP_TV, LMNA_TV, TCAP_non_TV, TNNT2_non_TV . So burden test result is NA
-BurdenTest1 <- AllSamples %>%
-  filter(group=="ACM" | group=="HVOL") %>%
-  summarise(
-  BAG3_non_TV=with(., signif(digits=2,fisher.test(x=BAG3_non_TV,y=group)$p.val)),
-  BAG3_TV=with(., signif(digits=2,fisher.test(x=BAG3_TV,y=group)$p.val)),
-  DSP_TV=NA,
-  LMNA_non_TV=with(., signif(digits=2,fisher.test(x=LMNA_non_TV,y=group)$p.val)),
-  LMNA_TV=NA,
-  MYH7_non_TV=with(., signif(digits=2,fisher.test(x=MYH7_non_TV,y=group)$p.val)),
-  SCN5A_TV=with(., signif(digits=2,fisher.test(x=SCN5A_TV,y=group)$p.val)),
-  TCAP_non_TV=NA,
-  TNNT2_non_TV=NA,
-  TPM1_non_TV=with(., signif(digits=2,fisher.test(x=TPM1_non_TV,y=group)$p.val)),
-  TPM1_TV=with(., signif(digits=2,fisher.test(x=TPM1_TV,y=group)$p.val)),
-  TTN_TV=with(., signif(digits=2,fisher.test(x=TTN_TV,y=group)$p.val)),
-  ALL_GENES_except_TTN=with(., signif(digits=2,fisher.test(x=ALL_GENES_except_TTN,y=group)$p.val)),
-  ALL_GENES=with(., signif(digits=2,fisher.test(x=ALL_GENES,y=group)$p.val))
-  )
+
+ACM_DCM_summary<-Summary_burden_Analysis(ACM_DCM_data,"ACM vs DCM")
+ACM_HVOL_summary<-Summary_burden_Analysis(ACM_HVOL_data, "ACM vs HVOL")
+DCM_HVOL_summary<-Summary_burden_Analysis(DCM_HVOL_data, "DCM vs HVOL")
 
 
-BurdenTest2 <- AllSamples %>%
-  filter(group=="ACM" | group=="DCM") %>%
-  summarise(
-  BAG3_non_TV=with(., signif(digits=2,fisher.test(x=BAG3_non_TV,y=group)$p.val)),
-  BAG3_TV=with(., signif(digits=2,fisher.test(x=BAG3_TV,y=group)$p.val)),
-  DSP_TV=with(., signif(digits=2,fisher.test(x=DSP_TV,y=group)$p.val)), 
-  LMNA_non_TV=with(., signif(digits=2,fisher.test(x=LMNA_non_TV,y=group)$p.val)),
-  LMNA_TV=with(., signif(digits=2,fisher.test(x=LMNA_TV,y=group)$p.val)), 
-  MYH7_non_TV=with(., signif(digits=2,fisher.test(x=MYH7_non_TV,y=group)$p.val)),
-  SCN5A_TV=NA,
-  TCAP_non_TV=with(., signif(digits=2,fisher.test(x=TCAP_non_TV,y=group)$p.val)), 
-  TNNT2_non_TV=with(., signif(digits=2,fisher.test(x=TNNT2_non_TV,y=group)$p.val)), 
-  TPM1_non_TV=NA,
-  TPM1_TV=NA,
-  TTN_TV=with(., signif(digits=2,fisher.test(x=TTN_TV,y=group)$p.val)),
-  ALL_GENES_except_TTN=with(., signif(digits=2,fisher.test(x=ALL_GENES_except_TTN,y=group)$p.val)),
-  ALL_GENES=with(., signif(digits=2,fisher.test(x=ALL_GENES,y=group)$p.val))  )
-
-
-BurdenTest3 <- AllSamples %>%
-  filter(group=="DCM" | group=="HVOL") %>%
-  summarise(
-  BAG3_non_TV=with(., signif(digits=2,fisher.test(x=BAG3_non_TV,y=group)$p.val)),
-  BAG3_TV=NA, 
-  DSP_TV=with(., signif(digits=2,fisher.test(x=DSP_TV,y=group)$p.val)), 
-  LMNA_non_TV=with(., signif(digits=2,fisher.test(x=LMNA_non_TV,y=group)$p.val)),
-  LMNA_TV=with(., signif(digits=2,fisher.test(x=LMNA_TV,y=group)$p.val)), 
-  MYH7_non_TV=with(., signif(digits=2,fisher.test(x=MYH7_non_TV,y=group)$p.val)),
-  SCN5A_TV=with(., signif(digits=2,fisher.test(x=SCN5A_TV,y=group)$p.val)),
-  TCAP_non_TV=with(., signif(digits=2,fisher.test(x=TCAP_non_TV,y=group)$p.val)), 
-  TNNT2_non_TV=with(., signif(digits=2,fisher.test(x=TNNT2_non_TV,y=group)$p.val)), 
-  TPM1_non_TV=with(., signif(digits=2,fisher.test(x=TPM1_non_TV,y=group)$p.val)),
-  TPM1_TV=with(., signif(digits=2,fisher.test(x=TPM1_TV,y=group)$p.val)),
-  TTN_TV=with(., signif(digits=2,fisher.test(x=TTN_TV,y=group)$p.val)),
-  ALL_GENES_except_TTN=with(., signif(digits=2,fisher.test(x=ALL_GENES_except_TTN,y=group)$p.val)),
-  ALL_GENES=with(., signif(digits=2,fisher.test(x=ALL_GENES,y=group)$p.val))  )
-
-Counts_Frequencies = Counts_Frequencies[,-1]
-BurdenTest_table<-t(rbind(Counts_Frequencies,BurdenTest2, BurdenTest1, BurdenTest3))
+BurdenTest_table<-t(rbind(Mean_stdDev_summary,ACM_DCM_summary, ACM_HVOL_summary, DCM_HVOL_summary))
 
 colnames(BurdenTest_table) <- c("ACM <br> (n=141)","DCM <br> (n=366)","HVOL <br> (n=445)","ACM vs DCM","ACM vs HVOL","DCM vs HVOL")
 
 
 panderOptions('table.split.table', 800)
 pander(BurdenTest_table)
-
 ```
 
+## Supp Table 7 : Summary of rare, protein altering variants in DCM-related genes detected per cohort 
+```{r SuppTable_PAV_freq}
+
+
+Mean_stdDev_temp <- group_VarGroups %>%
+  group_by(group) %>%
+    summarise_each(funs(binaryVariable_summary(.,n())), vars = BAG3_non_TV:ALL_GENES)  #BAG3_non_TV & ALL_GENES are hardcoded !!! 
+
+Mean_stdDev_temp<-as.data.frame(Mean_stdDev_temp)
+Mean_stdDev <- data.frame(Mean_stdDev_temp[,-1], row.names=Mean_stdDev_temp[,1])
+colnames(Mean_stdDev)<-colnames(group_VarGroups[-1])
+
+ExAC_freqs  = t(GeneVartype_ExAC_freqs[c("ExAC")])
+ExAC_freqs_VarGroup  = t(GeneVartype_ExAC_freqs[c("Gene_VarGroup")])
+colnames(ExAC_freqs) <- ExAC_freqs_VarGroup
+Mean_stdDev <-merge(Mean_stdDev,ExAC_freqs,all.x=TRUE,all.y=TRUE,sort=F)
+
+#ACM_DCM<-All_burden_Analysis(ACM_DCM_data,"ACM vs DCM")
+#ACM_HVOL<-All_burden_Analysis(ACM_HVOL_data, "ACM vs HVOL")
+#DCM_HVOL<-All_burden_Analysis(DCM_HVOL_data, "DCM vs HVOL")
+##ACM & HVOL do not have any variants in some groups. So burden test result is NA
+#BurdenTest_table_All <-t(RBIND(list(Mean_stdDev,ACM_DCM, ACM_HVOL,DCM_HVOL)))
+#colnames(BurdenTest_table_All) <- c("ACM <br> (n=141)","DCM <br> (n=366)","HVOL <br> (n=445)","ACM vs DCM","ACM vs HVOL","DCM vs HVOL")
+
+
+SuppTable_PAV_freq<-t(Mean_stdDev)
+colnames(SuppTable_PAV_freq) <- c("ACM <br> (n=141)","DCM <br> (n=366)","HVOL <br> (n=445)","ExAC <br> (n=60706)")
+
+panderOptions('table.split.table', 800)
+pander(SuppTable_PAV_freq)
+
+```
 
 
 ## Table 3 : Characteristics of ACM cases with and without titin truncating variants  & Outcome based on genotype 
 ###### The patient with 'Family history of CM' in 'Other Variants' group is the patient with BAG3tv [20WX04905]. His age at clinical assement is also 45years, much closer to TTNtv 
 ```{r Table 3}
 
-Characteristics_ACM_Plus_Outcome <-rbind(Characteristics_ACM_wrt_TTNTv,Outcome_wrt_genotype)
+#Characteristics_ACM_Plus_Outcome <-rbind(Characteristics_ACM_wrt_TTNTv,Outcome_wrt_genotype)
 
 #Update Column names and row names
 #Characteristics_ACM_Plus_Outcome<-update_colnames_VarGroups(Characteristics_ACM_Plus_Outcome)
 #Characteristics_ACM_Plus_Outcome<-update_rownames_characteristics(Characteristics_ACM_Plus_Outcome)
-Characteristics_ACM_Plus_Outcome<-update_Variable_Names_for_manuscript(Characteristics_ACM_Plus_Outcome)
+#Characteristics_ACM_Plus_Outcome<-update_Variable_Names_for_manuscript(Characteristics_ACM_Plus_Outcome)
 
 panderOptions('table.split.table', 800)
-pander(Characteristics_ACM_Plus_Outcome)
+pander(Characteristics_ACM_wrt_TTNTv)
+
+panderOptions('table.split.table', 800)
+pander(Outcome_wrt_genotype)
 
 ```
+
+## 
 
 #### Table for internal use - missing data info for above table
 
@@ -968,6 +979,7 @@ Characteristics_ACM_Plus_Outcome_NAs<-update_Variable_Names_for_manuscript(Chara
 
 panderOptions('table.split.table', 800)
 pander(Characteristics_ACM_Plus_Outcome_NAs)
+
 ```
 
 ## Supplementary Table 2 : Clinical characteristics of ACM cohort based on genotype
@@ -1004,3 +1016,22 @@ panderOptions('table.split.table', 800)
 panderOptions('table.split.table', 8000)
 pander(VariantsList)
 ```
+
+<!-- Advice from James to make the code less redundant and reduce human error  
+
+output <- RareVarRaw %>%
+  tbl_df %>%
+  mutate(new=paste(GENE,CSQ,sep="")) %>%
+  select(CHROM,new) %>%
+  # group_by() %>%
+  # summarise() %>%
+  outer_join(sample_id)
+
+t<-RareVarRaw %>%
+group_by(GENE,group,Var_Group)%>%
+  summarise(n()) %>%
+  right_join(SampleIDs)
+            %>% fill in NA with zero
+%>% do stats! 
+
+-->
