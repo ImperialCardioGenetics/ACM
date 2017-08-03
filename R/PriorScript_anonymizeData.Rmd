@@ -38,7 +38,7 @@ ACM_DCM_var_nonTTN_Group <- read.table("../input-files/ACM_DCM_var_nonTTN_group.
 
 
 #Clinical Phenotype of ACM Samples [From Spanish Team]
-ACM_pheno = read.xls("../input-files/ACM_pheno.xlsx", sheet=1, header=T, fileEncoding="latin1") 
+ACM_pheno = read.xls("../sensitiveData/ACM_pheno.xlsx", sheet=1, header=T, fileEncoding="latin1") 
 
 #English translations of headers of ACM_pheno file [From Spanish Team]
 ACM_english_headers = read.csv("../input-files/ACM_ColumnNames_English.csv", header = FALSE, sep=',', fileEncoding="latin1")
