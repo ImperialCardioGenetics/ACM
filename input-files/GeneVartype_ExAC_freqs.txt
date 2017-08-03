@@ -1,0 +1,17 @@
+Gene	VarClass	ExAC_pct	ExAC	ExAC_count	Gene_VarGroup
+BAG3	Truncating	4	4 (0.01%)	0.01	BAG3_TV
+DSP	Truncating	42	42 (0.07%)	0.07	DSP_TV
+LMNA	Truncating	8	8 (0.02%)	0.02	LMNA_TV
+SCN5A	Truncating	34	34 (0.06%)	0.06	SCN5A_TV
+TCAP	Truncating	14	14 (0.03%)	0.03	TCAP_TV
+TNNC1	Truncating	2	2 (0.003%)	0.003	TNNC1_TV
+TNNT2	Truncating	17	17 (0.03%)	0.03	TNNT2_TV
+TTN	Truncating	484	484 (0.83%)	0.83	TTN_TV
+BAG3	Non-Truncating	500	500 (0.84%)	0.84	BAG3_non_TV
+LMNA	Non-Truncating	297	297 (0.58%)	0.58	LMNA_non_TV
+MYH7	Non-Truncating	815	815 (1.35%)	1.35	MYH7_non_TV
+TCAP	Non-Truncating	120	120 (0.22%)	0.22	TCAP_non_TV
+TNNC1	Non-Truncating	33	33 (0.06%)	0.06	TNNC1_non_TV
+TNNT2	Non-Truncating	120	120 (0.21%)	0.21	TNNT2_non_TV
+ALL_GENES_except_TTN	NA	2006	2006 (3.48%)	3.48	ALL_GENES_except_TTN
+ALL_GENES	NA	2490	2490 (4.31%)	4.31	ALL_GENES
