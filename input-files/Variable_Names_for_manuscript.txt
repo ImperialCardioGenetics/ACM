@@ -1,23 +1,60 @@
 AGE_AT_scan	Age at scan
 EF_echo	Left ventricular ejection fraction (echo)
 EF_MRI	Left ventricular ejection fraction (MRI)
-DD_echo	Left ventricular end diastolic diameter (echo)
-DD_MRI	Left ventricular end diastolic volume (MRI)
-Ethnicity	Ethnicity (caucasian)
+DD_echo	Left ventricular end-diastolic diameter (echo)
+DD_MRI	Left ventricular end-diastolic volume (MRI)
+Ethnicity	Ethnicity (Caucasian)
 Alcohol_grams	Alcohol (grams)
 Sex_males	Sex (males)
 DCMVariant_nonTTN	Other Variants (n=5)
 GenotypeNegative	Genotype Neg (n=122)
 TTNtv	TTNtv (n=14)
-pvalue_TTN_GN	P-value (TTNtv vs Genotype Neg)
+pvalue_TTN_GN	P value
 ACM	ACM (n=141)
 DCM	DCM (n=366)
-HVOL	HVOL (n=445)  
-pvalue_A_H	ACM vs HVOL
-pvalue_D_H	DCM vs HVOL
+HVOL	Healthy Volunteer (n=445)
+ExAC	ExAC (n=60706)
+pvalue_A_H	ACM vs Healthy Volunteer
+pvalue_D_H	DCM vs Healthy Volunteer
 pvalue_A_D	ACM vs DCM
 GenotypeNeg_120	Genotype Neg (n=120)
 FollowupTime_in_years	Mean follow up period (years)
 Death_or_Transplant	Death or transplant
 LVEF_recovery	Recovery of left ventricular ejection fraction 
 No_LVEF_Recovery	No recovery of left ventricular ejection fraction
+BAG3_non_TV	BAG3-non-tv
+BAG3_TV	BAG3tv
+DSP_TV	DSPtv
+LMNA_non_TV	LMNA-non-tv
+LMNA_TV	LMNAtv
+MYH7_non_TV	MYH7-non-tv
+SCN5A_TV	SCN5Atv
+TCAP_TV	TCAPtv
+TCAP_non_TV	TCAP-non-tv
+TNNC1_TV	TNNC1tv
+TNNC1_non_TV	TNNC1-non-tv
+TNNT2_TV	TNNT2tv
+TNNT2_non_TV	TNNT2-non-tv
+TTN_TV	TTNtv
+ALL_GENES	All Genes
+ALL_GENES_except_TTN	Genes other than TTN
+group	Cohort
+GENE	Gene
+af_filter	Filtering AF
+AF_filter_pop	Filtering AF pop
+Diastolic_diameter_FINAL	Final Left ventricular end-diastolic diameter (mm)
+Initial_ejection_fraction	Initial Left ventricular ejection fraction (%)
+Diastolic_diameter	Initial Left ventricular end-diastolic diameter (mm)
+FINAL_EJECTION_FRACTION	Final left ventricular ejection fraction (%)
+SYSTOLIC_DIAMETER	Initial Left ventricular systolic diameter (mm)
+NYHA_CLASS	Initial NYHA class 1/2/3/4 (n)
+CURRENT_DRINKER	Current alcohol use (n)
+NON_DRINKER	Non-drinker at last assessment (n)
+DEATH	Death
+EJECTION_FRACTION_RECOVERY	Recovery of left ventricular ejection fraction 
+QRS_gt_120	QRS greater than 120ms
+TRANSPLANT	Transplant 
+SMOKING	Smoker
+HYPERTENSION	Hypertension 
+DYSLIPIDEMIA	Dyslipidemia 
+DIABETES_MELLITUS	Diabetes mellitus

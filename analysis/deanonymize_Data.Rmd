@@ -1,0 +1,245 @@
+---
+title: "De-anonymization"
+author: "Risha Govind"
+date: "`r Sys.time()`"
+output:
+  # html_document
+  word_document:
+    reference_docx: ./templateLandscape.docx
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, size="smallsize")
+library(lazyeval)
+library(plyr)
+library(dplyr)
+library(pander)
+library(gdata)
+library(gtools)
+
+```
+
+
+```{r load data}
+## Load datasets
+
+
+#BRUID to Spanish IDS [From Rachel]
+BRUID_localID <- read.csv("../input-files/BRUID_localID.csv", header=T, sep=',') %>%
+  tbl_df
+
+#List of Samples from ACM TTNtv Group [From Liz]
+ACM_TTNtv_Group <- read.table("../input-files/ACM_TTNtv_group.txt", header=T) %>%
+  tbl_df
+
+#List of Samples from ACM DCM_var_nonTTN Group [From Liz]
+ACM_DCM_var_nonTTN_Group <- read.table("../input-files/ACM_DCM_var_nonTTN_group.txt", header=T) %>%
+  tbl_df
+
+
+#Clinical Phenotype of ACM Samples [From Spanish Team]
+ACM_pheno = read.xls("../input-files/ACM_pheno.xlsx", sheet=1, header=T, fileEncoding="latin1") 
+
+#English translations of headers of ACM_pheno file [From Spanish Team]
+ACM_english_headers = read.csv("../input-files/ACM_ColumnNames_English.csv", header = FALSE, sep=',', fileEncoding="latin1")
+
+#Names Of columns as to appear in manuscript
+#Also include manual english-spanish translations which were not in the "translations" file above
+ACM_pheno_Names_for_manuscript = read.table("../input-files/ACM_pheno_Names_for_manuscript.txt", header=FALSE, sep='\t')
+
+```
+
+
+```{r removing empty rows and columns from excel file dataframe}
+## removing blank rows/columns from excel file dataframe
+
+#remove blank columns
+ACM_pheno <- ACM_pheno[,colSums(is.na(ACM_pheno))<nrow(ACM_pheno)]
+#remove rows that do not have sampleIDs
+ACM_pheno <- ACM_pheno[!(ACM_pheno$SAMPLES  == ""), ]  %>%
+  tbl_df
+
+
+#dim(ACM_pheno)
+
+```
+
+
+```{r update spanish col names to english in ACM_pheno}
+
+## Update Headers to English
+
+# CHANGE COLNAMES USING : names(ACM_pheno)[names(ACM_pheno)==headerSpanish] <- headerEnglish !!!!!!!!!!!!!!!!!!!!!
+#
+
+ACM_pheno_colNames = colnames(ACM_pheno)
+
+count <- nrow(ACM_english_headers)
+
+#replace all spaces and dots with underscore
+ACM_pheno_colNames<- gsub(x = ACM_pheno_colNames,pattern = " ", replacement = "_",fixed = TRUE)
+ACM_pheno_colNames<- gsub(x = ACM_pheno_colNames,pattern = ".", replacement = "_",fixed = TRUE)
+
+for (i in 1:count){
+  headerSpanish <- ACM_english_headers$V1[i]
+  headerEnglish <- ACM_english_headers$V2[i]
+  
+  #replace all spaces and dots with underscore
+  headerSpanish<- gsub(x = headerSpanish,pattern = " ", replacement = "_",fixed = TRUE)
+  headerEnglish<- gsub(x = headerEnglish,pattern = " ", replacement = "_",fixed = TRUE)
+  headerSpanish<- gsub(x = headerSpanish,pattern = ".", replacement = "_",fixed = TRUE)
+  headerEnglish<- gsub(x = headerEnglish,pattern = ".", replacement = "_",fixed = TRUE)
+  
+  
+  ACM_pheno_colNames<-gsub(headerSpanish, headerEnglish, ACM_pheno_colNames,ignore.case = TRUE)  
+}
+
+## Further fine tune column names, suitable for manuscript 
+
+count <- nrow(ACM_pheno_Names_for_manuscript)
+
+for (i in 1:count){
+  headerOld <- ACM_pheno_Names_for_manuscript$V1[i]
+  headerNew <- ACM_pheno_Names_for_manuscript$V2[i]
+  
+  #replace all spaces and dots with underscore
+  headerNew<- gsub(x = headerNew,pattern = " ", replacement = "_",fixed = TRUE)
+  ACM_pheno_colNames<-gsub(headerOld, headerNew, ACM_pheno_colNames,ignore.case = TRUE)  
+}
+
+
+#add column names to ACM_pheno
+colnames(ACM_pheno)<- ACM_pheno_colNames
+
+
+```
+
+
+```{r tidy datasets to prepare for merge}
+#remove irrelevant columns 
+BRUID_localID <-BRUID_localID[,c("LocalIdNumber","BruNumber")]
+
+#update the LocalIdNumber of one sample was does not match with the pheno file 
+BRUID_localID$LocalIdNumber <- as.character(BRUID_localID$LocalIdNumber)
+BRUID_localID$LocalIdNumber[BRUID_localID$LocalIdNumber == 'BELL-508 BIS'] <- "BELL-508"
+
+#Add BRU IDs to pheno table
+ACM_pheno_BRUID<-merge(BRUID_localID, ACM_pheno, by.x = "LocalIdNumber", by.y = "SAMPLES", all = TRUE) 
+
+#Tidy dataframes of ACM groups [TTNtv, DCMvar_nonTTN, GenoNeg]
+
+#select first column only
+ACM_TTNtv_Group<-ACM_TTNtv_Group[,1]
+#rename first column to BRUID
+colnames(ACM_TTNtv_Group) <- "BRUID"
+#Add a second column : VarGroup
+ACM_TTNtv_Group<-cbind(ACM_TTNtv_Group,VarGroup="TTNtv")
+
+#select first column only
+ACM_DCM_var_nonTTN_Group<-ACM_DCM_var_nonTTN_Group[,1]
+#rename first column to BRUID
+colnames(ACM_DCM_var_nonTTN_Group) <- "BRUID"
+#Add a second column : VarGroup
+ACM_DCM_var_nonTTN_Group<-cbind(ACM_DCM_var_nonTTN_Group,VarGroup="DCMVariant_nonTTN")
+
+#Remove TTNtv samples from ACM_DCM_var_nonTTN_Group this. 20PC04885 has a TTNtv and a LMNA SNP. This sample is to be in the TTNtv group 
+ACM_DCM_var_nonTTN_Group<-subset(ACM_DCM_var_nonTTN_Group, BRUID!="20PC04885")
+
+ACM_groups=rbind(ACM_TTNtv_Group,ACM_DCM_var_nonTTN_Group)
+
+```
+
+
+
+```{r combine data}
+
+## Combine all datasets
+ACM <- merge(ACM_groups, ACM_pheno_BRUID, by.x = "BRUID", by.y = "BruNumber", all = TRUE)
+
+#Update VarGroup of GenotypeNegative
+ACM$VarGroup <- as.character(ACM$VarGroup)
+ACM$VarGroup[is.na(ACM$VarGroup)] <- "GenotypeNegative"
+
+#dim(ACM)
+
+```
+
+
+
+```{r Prepare data for analysis}
+#Sex_males_males is coded 1=Male, 2=Female, change 0=Female
+#For easier calculations, it's easier to work with 1 and 0
+ACM$Sex_males[ACM$Sex_males=="2"] <- 0
+
+#make Category 2 in CURRENT_DRINKER = 1 [we are only interested in proportion of drinkers vs non-drinkers - not looking at degree]
+ACM$CURRENT_DRINKER[ACM$CURRENT_DRINKER=="2"] <- 1
+
+ACM[grep("1", ACM$CURRENT_DRINKER), "NON_DRINKER"] <- 0
+ACM[grep("0", ACM$CURRENT_DRINKER), "NON_DRINKER"] <- 1
+
+#if death, make recovery = 0, there are 2 people with NA in recov and 1 in death. 
+ACM$EJECTION_FRACTION_RECOVERY[ACM$DEATH=="1"] <- 0
+
+
+```
+
+
+
+```{r Preparing for survival Analysis}
+
+#Saving EJECTION_FRACTION_RECOVERY in here is using ACM_survival_raw later for recovery analysis 
+ACM_survival <- ACM[,c("BRUID","VarGroup","DATE_INITIAL_CLINICAL_ASSESSMENT","DATE_OF_LAST_CONSULTATION","DEATH","DATE_OF_DEATH","TRANSPLANT","DATE_OF_TRANSPLANT","Alcohol_grams","Age_at_initial_clinical_assesement","Initial_ejection_fraction","Diastolic_diameter","Sex_males","Atrial_fibrillation","Family_history_of_CM","Family_history_of_SCD","EJECTION_FRACTION_RECOVERY")]
+
+#Add a column : Time (days)
+ACM_survival<-cbind(ACM_survival,TIME="")
+ACM_survival<-cbind(ACM_survival,EVENT="0")
+ACM_survival<-cbind(ACM_survival,EndDate="")
+
+ACM_survival$EndDate <- as.character(ACM_survival$EndDate)
+ACM_survival$EVENT <- as.character(ACM_survival$EVENT)
+
+#Death
+ACM_survival$DATE_OF_DEATH <- as.character(ACM_survival$DATE_OF_DEATH)
+endEvent <- ACM_survival$DEATH=="1"
+ACM_survival[endEvent, "EndDate"] <- ACM_survival[endEvent, "DATE_OF_DEATH"]
+ACM_survival[endEvent, "EVENT"] <- ACM_survival[endEvent, "DEATH"]
+
+#Transplant
+ACM_survival$DATE_OF_TRANSPLANT <- as.character(ACM_survival$DATE_OF_TRANSPLANT)
+endEvent <- ACM_survival$TRANSPLANT=="1"
+ACM_survival[endEvent, "EndDate"] <- ACM_survival[endEvent, "DATE_OF_TRANSPLANT"]
+ACM_survival[endEvent, "EVENT"] <- ACM_survival[endEvent, "TRANSPLANT"]
+
+
+#DATE_OF_LAST_CONSULTATION - for others
+ACM_survival$DATE_OF_LAST_CONSULTATION <- as.character(ACM_survival$DATE_OF_LAST_CONSULTATION)
+endEvent <- ACM_survival$EndDate==""
+ACM_survival[endEvent, "EndDate"] <- ACM_survival[endEvent, "DATE_OF_LAST_CONSULTATION"]
+
+#Calculate T: number of days between start and end point
+ACM_survival$TIME <- as.Date(as.character(ACM_survival$EndDate), format="%Y-%m-%d")-
+  as.Date(as.character(ACM_survival$DATE_INITIAL_CLINICAL_ASSESSMENT), format="%Y-%m-%d")
+
+
+ACM_survival_raw<-ACM_survival
+
+ACM_survival <- ACM_survival[,c("BRUID","TIME","EVENT", "VarGroup","Alcohol_grams","Age_at_initial_clinical_assesement","Initial_ejection_fraction","Diastolic_diameter","Sex_males","Atrial_fibrillation","Family_history_of_CM","Family_history_of_SCD")]
+
+colnames(ACM_survival) <- c("BRUID","TIME","EVENT", "GENETIC_STATUS","Alcohol_grams","Age_at_initial_clinical_assesement","Initial_ejection_fraction","Diastolic_diameter","Sex_males","Atrial_fibrillation","Family_history_of_CM","Family_history_of_SCD")
+
+#write table
+write.table(ACM_survival, quote=FALSE, sep ="\t", row.names = F, file="../input-files/ACM_Survival_Analysis_input.txt") 
+write.table(ACM_survival_raw, quote=FALSE, sep ="\t", row.names = F, file="../input-files/ACM_Survival_Analysis_raw.txt") 
+
+#pander(ACM_survival)
+```
+
+
+```{r Deanonymize data}
+
+ACM<-ACM[,c("BRUID","VarGroup","LocalIdNumber","AGE_AT_LAST_CONSULTATION","Alcohol_grams","Sex_males","SMOKING","HYPERTENSION","DYSLIPIDEMIA","DIABETES_MELLITUS","COPD","Age_at_initial_clinical_assesement","SITUATION_INITIAL_EVALUATION","NYHA_CLASS","SYSTOLIC_BLOOD_PRESSURE","DIASTOLIC_BLOOD_PRESSURE","HEARTBEAT","SODIUM_LEVEL","CREATININA","HEMOGLOBIN","BILIRUBIN","ALAT","ASAT","GGT","QRS_DURATION","Diastolic_diameter","SYSTOLIC_DIAMETER","Initial_ejection_fraction","Diastolic_diameter_FINAL","FINAL_EJECTION_FRACTION","EJECTION_FRACTION_RECOVERY","CURRENT_DRINKER","DIGOXIN","LOOP_DIURETICS","THIAZIDES","SPIRONOLACTONE","BETABLOCKER","ACEI","ARB","ACEI_O_ARB","AMIODARONE","DEATH","CAUSE_OF_DEATH","TRANSPLANT","CRT","ICD","RHYTHM","Atrial_fibrillation","QRS_gt_120","LBBB","Family_history_of_CM","Family_history_of_SCD","TTN_MUTATIONS","OTHER_DCM_MUTATIONS","NON_DRINKER")]
+
+#write table
+write.table(ACM, quote=FALSE, sep ="\t", row.names = F, file="../input-files/ACM_pheno.tsv") 
+
+```
