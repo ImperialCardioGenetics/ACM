@@ -8,4 +8,4 @@ DCM_pheno_raw.csv
 *.html
 *.docx
 sensitiveData/*
-bashScripts/CONFIG
+bashScripts/COFIG.txt
