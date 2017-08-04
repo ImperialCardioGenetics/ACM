@@ -18,9 +18,21 @@
 #PBS -l mem=20gb
 #PBS -l walltime=120:00:00
 
+
+
+##### If running via qsub this 
+source ../sensitiveData/CONFIG
+
+
+if [ -z "$TopDir" ]; then 
+	echo "ERROR : TopDir file variable is not set. Check CONFIG file. If running via qsub change the path to CONFIG files to full path of the file!"
+	exit 1
+elif
+
+
 #select gene_symbol,gene_ensg from ICC_MUTATIONS.gene where gene_symbol in ('BAG3','LMNA','TCAP','TNNC1','TNNT2','TPM1','DSP','SCN5A','TTN','VCL','MYH7');
 
-source ./CONFIG
+
 
 group=$TopDir/ALLSamples
 
