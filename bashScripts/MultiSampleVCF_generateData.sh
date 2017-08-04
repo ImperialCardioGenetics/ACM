@@ -20,36 +20,9 @@
 
 #select gene_symbol,gene_ensg from ICC_MUTATIONS.gene where gene_symbol in ('BAG3','LMNA','TCAP','TNNC1','TNNT2','TPM1','DSP','SCN5A','TTN','VCL','MYH7');
 
-RSoftware=/data/Install/R-3.2.3-rbh-head/bin/R
-
-
-TopDir=/data/Research/Risha/ACM/results_m_variantList
-
-
-#inFile=$TopDir/Input_for_Plink.vcf
-#out_tableize=$TopDir/Input_for_Plink.txt
-
-inFile=/data/results/NextSeq/MultiSampleVariantCalls/ACMs_20160916/ALLSamples.snp.indel.filtered.MERGED.VEP.LOFTEE.vcf
-Filtered_SampleID=/data/Research/Risha/ACM/results_k_FinalSet/Filtered_SampleIDs.txt
+source ./CONFIG
 
 group=$TopDir/ALLSamples
-
-
-out_tableize=$TopDir/ALLSamples.Tablize.txt
-TranscriptsOfInterest=$TopDir/ALLSamples.TranscriptsOfInterest.txt
-PAV=$TopDir/ALLSamples.TranscriptsOfInterest.PAV.txt
-
-
-LOFTEE=/data/Install/LOFTEE/loftee-master/src
-bgzip=/usr/local/bin/bgzip
-tabix=/usr/local/bin/tabix
-
-# Filter VCF Files  
-GATKs=/data/Install/GATK_v3.4-0/dist
-Java7=/data/Install/Java7/jdk1.7.0_40/bin/java
-nt=55
-memory="-Xmx125g"
-Ref=/data/Store/reference/human/UCSC_hg19/allchrom.Chr1ToChrM.validated.fa
 
 $Java7 $memory -jar $GATKs/GenomeAnalysisTK.jar \
 		-R $Ref \
@@ -68,26 +41,26 @@ $Java7 $memory -jar $GATKs/GenomeAnalysisTK.jar \
 TTN_constitutive_exons=$TopDir/TTN_constitutive_exons.bed
 
 #sort VCF Files
-perl /data/Install/vcftools-0.1.14/bin/vcf-sort -c $group.PassOnly.vcf  > $group.PassOnly.sorted.vcf
+perl $vcftools/vcf-sort -c $group.PassOnly.vcf  > $group.PassOnly.sorted.vcf
 
 #zip VCF File
-/data/Install/samtools-1.3/bin/bgzip -c $group.PassOnly.sorted.vcf > $group.PassOnly.sorted.vcf.gz
+$samtools/bgzip -c $group.PassOnly.sorted.vcf > $group.PassOnly.sorted.vcf.gz
 
 #Create tbix index
-/data/Install/samtools-1.3/bin/tabix -p vcf $group.PassOnly.sorted.vcf.gz
+$samtools/tabix -p vcf $group.PassOnly.sorted.vcf.gz
 
 #tabix
-/data/Install/samtools-1.3/bin/tabix $group.PassOnly.sorted.vcf.gz -R $TTN_constitutive_exons > $group.PassOnly.TTN_constitutive_exons.vcf.gz
+$samtools/tabix $group.PassOnly.sorted.vcf.gz -R $TTN_constitutive_exons > $group.PassOnly.TTN_constitutive_exons.vcf.gz
 
 
 # Unzip TTN_constitutive_variants, get non-chr2 variants, combine two
-/data/Install/samtools-1.3/bin/bgzip -d $group.PassOnly.TTN_constitutive_exons.vcf.gz
+$samtools/bgzip -d $group.PassOnly.TTN_constitutive_exons.vcf.gz
 (grep ^"#" $group.PassOnly.vcf; grep -v chr2 $group.PassOnly.vcf) > $group.PassOnly.Chr2_Removed.vcf 
 #grep -wv ^"chr2" $group.PassOnly.vcf > $group.PassOnly.Chr2_Removed.vcf 
 
 
 cat $group.PassOnly.Chr2_Removed.vcf $group.PassOnly.TTN_constitutive_exons.vcf > $group.PassOnly.TTN_constitutive_exons.AllChr.vcf 
-perl /data/Install/vcftools-0.1.14/bin/vcf-sort -c $group.PassOnly.TTN_constitutive_exons.AllChr.vcf   > $group.PassOnly.TTN_constitutive_exons.AllChr.sorted.vcf 
+perl $vcftools/vcf-sort -c $group.PassOnly.TTN_constitutive_exons.AllChr.vcf   > $group.PassOnly.TTN_constitutive_exons.AllChr.sorted.vcf 
 
 Filtered=$group.PassOnly.TTN_constitutive_exons.AllChr.sorted.vcf
 
@@ -154,13 +127,10 @@ awk '{print $1"\t"$2"\t"$3"\t"$4"\t"$21"\t"$22"\t"$25"\t"$27"\t"$28"\t"$20}' $PA
 # Add ExAC and FAF frequencies 
 #get subset of ExAC [only genes on interest] #first get regions we need in bed File
 
-ExAC=/data/Mirror/ExAC_release/release0.3.1/ExAC.r0.3.1.sites.vep.vcf.gz
-af_filter=/data/Mirror/ExAC_release/release0.3.1/freq_filter/af_filter_data.tsv.gz
-ICC_169Genes=/data/Store/Target/ICCNexteraV4_169/Target_Exon_plus_minus_40bp/ICC_169Genes_Nextera_V4_ProteinCodingExons_overHang40bp.mergeBed.bed
 
 grep -E "BAG3|LMNA|TCAP|TNNC1|TNNT2|TPM1|DSP|SCN5A|TTN|VCL|MYH7" $ICC_169Genes | sed 's/chr//g' > $TopDir/GenesOfInterest.bed
 
-/data/Install/samtools-1.3/bin/tabix $ExAC -R $TopDir/GenesOfInterest.bed > $TopDir/ExAC.r0.3.1.GenesOfInterest.vcf.gz
+$samtools/tabix $ExAC -R $TopDir/GenesOfInterest.bed > $TopDir/ExAC.r0.3.1.GenesOfInterest.vcf.gz
 
 ExAC=$TopDir/ExAC.r0.3.1.GenesOfInterest.vcf.gz
 
@@ -304,7 +274,7 @@ grep -E $Samples2Keep $TopDir/ALLSamples_Table.group.txt > $TopDir/FilteredSampl
 
 		$RSoftware CMD BATCH $TopDir/RemoveCommonVariants.r
 		
-cp $TopDir/Final_VariantList_Rare.txt /data/Research/Risha/ACM/github_ACM_Rstudio/ACM/input-files/Variants_filteredbyGeneVarType_allGroups_allfreq.txt
+cp $TopDir/Final_VariantList_Rare.txt $Rproject_input_files_DIR/Variants_filteredbyGeneVarType_allGroups_allfreq.txt
 
 		
 # Seperate into groups 
