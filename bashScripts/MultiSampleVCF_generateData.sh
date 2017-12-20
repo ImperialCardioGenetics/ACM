@@ -8,7 +8,7 @@
 #PBS -q default
 #PBS -o Logs/20_variantList_stdout.$PBS_JOBID
 #PBS -e Logs/20_variantList_stderr.$PBS_JOBID
-###PBS -M r.govind@rbht.nhs.uk
+
 
 ##Job configuration
 #PBS -V
