@@ -17,17 +17,7 @@ library(pander)
 library(gdata)
 library(gtools)
 
-
-
-#To Do
-########
-# List of Samples from ACM TTNtv/ nonTTN Group [From Liz] : Still getting this list from flat files. Update code to get this from Rare Variants Data
-# DCM_demographics & HVOL_demographics : the infiles for these won't be shared with the world. Would it be worth seperating the code this it? So at least the script can run smoothly
-# Multiple Tables : Number in each group in column names is hard coded. Need to be fixed 
-# This is +3 ie outside essential slice site. Is this a bug in VEP? is 10AJ04668 DCM	DSP	chr6: g.[7569571CAAGT>C]	c.1574+3_1574+6delAAGT  splice donor variant & coding sequence variant
-#Update the bash script in this GIT repo. Current one is too old. 
-# Check the that path to /data... isn't in bash script or any script. Security risk
-# Supp Table - The Final EDD column has initial on it ... fix update_Variable_Names_for_manuscript function : Initial Left ventricular end-diastolic diameter FINAL 
+ 
 
 ```
 
@@ -860,21 +850,3 @@ pander(VariantsList)
 
 ```
 
-<!-- Advice from James to make the code less redundant and reduce human error  
-
-output <- RareVarRaw %>%
-  tbl_df %>%
-  mutate(new=paste(GENE,CSQ,sep="")) %>%
-  select(CHROM,new) %>%
-  # group_by() %>%
-  # summarise() %>%
-  outer_join(sample_id)
-
-t<-RareVarRaw %>%
-group_by(GENE,group,Var_Group)%>%
-  summarise(n()) %>%
-  right_join(SampleIDs)
-            %>% fill in NA with zero
-%>% do stats! 
-
--->
